@@ -2,7 +2,7 @@
 import { state, subscribe, monthItems, countable } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
 import { openTxNew } from "./editor.js";
-import { today, addMonth, paymentDateOf, yen, formatMonth, formatDayWeek, slashDate } from "./utils.js";
+import { today, addMonth, paymentDateOf, yen, price, formatMonth, formatDayWeek, slashDate } from "./utils.js";
 
 const titleEl = document.getElementById("listMonth");
 const summaryEl = document.getElementById("listSummary");
@@ -42,7 +42,7 @@ function render() {
   const fixedTotal = counted.filter((i) => i.type === "fixed").reduce((s, i) => s + Number(i.amount), 0);
 
   summaryEl.innerHTML = `
-    <div class="month-total">${yen(total)}</div>
+    <div class="month-total">${price(total, "xl")}</div>
     <div class="month-meta">
       <span>${slashDate(paymentDateOf(month))} 支払い</span>
       <span>${counted.length}件${fixedTotal ? ` ・ うち固定費 ${yen(fixedTotal)}` : ""}</span>

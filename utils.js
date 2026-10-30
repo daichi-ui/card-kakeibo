@@ -48,11 +48,24 @@ export function nextPayment(todayStr) {
   return { usageMonth, date: paymentDateOf(usageMonth) };
 }
 
-// 1180 → "¥1,180"、-2400 → "−¥2,400"、null → "—"
+// 文字で使う金額：1180 → "1,180円"、-2400 → "−2,400円"、null → "—"
 export function yen(n) {
   if (n === null || n === undefined || !Number.isFinite(Number(n))) return "—";
   const v = Math.round(Number(n));
-  return (v < 0 ? "−" : "") + "¥" + Math.abs(v).toLocaleString("ja-JP");
+  return (v < 0 ? "−" : "") + Math.abs(v).toLocaleString("ja-JP") + "円";
+}
+
+// 画面に表示する金額（HTML）
+// PayPay のガイドに合わせて「円」を数字より小さく表示する
+//   size: "xl"（40px・円20px）/ "l"（28px・円14px）/ "m"（16px・円12px）/ "s"（14px・円12px）
+export function price(n, size = "m") {
+  if (n === null || n === undefined || !Number.isFinite(Number(n))) {
+    return `<span class="price price-${size} is-empty">—</span>`;
+  }
+  const v = Math.round(Number(n));
+  return `<span class="price price-${size}${v < 0 ? " is-minus" : ""}">` +
+    `<span class="price-num">${v < 0 ? "−" : ""}${Math.abs(v).toLocaleString("ja-JP")}</span>` +
+    `<span class="price-yen">円</span></span>`;
 }
 
 // "2026-10" → "2026年10月"

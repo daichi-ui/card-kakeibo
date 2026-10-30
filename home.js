@@ -4,7 +4,7 @@ import { state, subscribe, monthItems, monthTotal, countable, reviewItems } from
 import { rowHtml, bindRows } from "./rows.js";
 import { openTxNew } from "./editor.js";
 import {
-  today, addMonth, nextPayment, paymentDateOf, parseDate, yen, formatMonth, slashDate
+  today, addMonth, nextPayment, paymentDateOf, parseDate, yen, price, formatMonth, slashDate
 } from "./utils.js";
 
 const payCard = document.getElementById("payCard");
@@ -42,7 +42,7 @@ function render() {
   payCard.innerHTML = `
     <button type="button" class="pay-inner" data-month="${pay.usageMonth}">
       <div class="pay-label">次の支払い</div>
-      <div class="pay-amount">${yen(payTotal)}</div>
+      <div class="pay-amount">${price(payTotal, "xl")}</div>
       <div class="pay-sub">
         <span>${slashDate(pay.date)}（${daysLeft === 0 ? "今日" : `あと${daysLeft}日`}）</span>
         <span>${formatMonth(pay.usageMonth)}利用分${stillUsing ? "・まだ増えます" : ""}</span>
@@ -59,12 +59,12 @@ function render() {
   monthCard.innerHTML = `
     <button type="button" class="stat" data-month="${thisMonth}">
       <span class="stat-label">今月の利用</span>
-      <span class="stat-num">${yen(thisTotal)}</span>
+      <span class="stat-num">${price(thisTotal, "l")}</span>
       <span class="stat-sub">${thisItems.length}件 ・ ${slashDate(paymentDateOf(thisMonth))}払い</span>
     </button>
     <button type="button" class="stat" data-month="${lastMonth}">
       <span class="stat-label">先月の利用</span>
-      <span class="stat-num">${yen(lastTotal)}</span>
+      <span class="stat-num">${price(lastTotal, "l")}</span>
       <span class="stat-sub">今月は${diff >= 0 ? `${yen(diff)} 多い` : `${yen(-diff)} 少ない`}</span>
     </button>`;
 

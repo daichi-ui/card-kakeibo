@@ -18,8 +18,6 @@ const loginView = document.getElementById("loginView");
 const appView = document.getElementById("appView");
 const loginError = document.getElementById("loginError");
 const pageTitle = document.getElementById("pageTitle");
-const navbar = document.getElementById("navbar");
-const navTitle = document.getElementById("navTitle");
 const accountSheet = document.getElementById("accountSheet");
 const dataError = document.getElementById("dataError");
 
@@ -90,17 +88,6 @@ document.querySelectorAll("dialog").forEach((dialog) => {
   });
 });
 
-// ===== 大きなタイトルの上の日付 =====
-const d = new Date();
-const week = ["日", "月", "火", "水", "木", "金", "土"].at(d.getDay());
-document.getElementById("todayText").textContent = `${d.getMonth() + 1}月${d.getDate()}日 ${week}曜日`;
-
-// ===== スクロールしたら上のバーに小さいタイトルを出す =====
-function onScroll() {
-  navbar.classList.toggle("is-scrolled", window.scrollY > 44);
-}
-window.addEventListener("scroll", onScroll, { passive: true });
-
 // ===== タブ切り替え =====
 const TABS = ["home", "list", "report"];
 
@@ -112,12 +99,9 @@ export function showTab(name) {
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === name);
   });
-  const title = document.getElementById(`tab-${name}`).dataset.title;
-  pageTitle.textContent = title;
-  navTitle.textContent = title;
+  pageTitle.textContent = document.getElementById(`tab-${name}`).dataset.title;
   history.replaceState(null, "", `#${name}`);
   window.scrollTo(0, 0);
-  onScroll();
 }
 
 document.querySelectorAll(".tab").forEach((btn) => {

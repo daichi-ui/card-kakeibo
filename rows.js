@@ -1,5 +1,5 @@
 // ===== 一覧の1行（ホーム・明細で共通） =====
-import { yen, formatDayWeek, escapeHtml } from "./utils.js";
+import { price, formatDayWeek, escapeHtml } from "./utils.js";
 import { openItem } from "./editor.js";
 import { state, monthItems } from "./store.js";
 
@@ -25,7 +25,7 @@ export function rowHtml(item, { showDate = false } = {}) {
             data-type="${item.type || "tx"}" data-id="${item.id}" data-month="${item.month || ""}">
       <div class="item-head">
         <span class="tx-store">${escapeHtml(item.store || "（お店不明）")}</span>
-        <span class="item-amount ${Number(item.amount) < 0 ? "is-minus" : ""}">${yen(item.amount)}</span>
+        <span class="item-amount">${price(item.amount, "m")}</span>
       </div>
       ${sub || badges.length ? `<div class="item-sub">${badges.join("")}${escapeHtml(sub)}</div>` : ""}
       ${item.memo ? `<div class="item-memo">${escapeHtml(item.memo)}</div>` : ""}

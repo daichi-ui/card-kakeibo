@@ -3,7 +3,7 @@ import {
   doc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { state, subscribe, fixedRef } from "./store.js";
-import { today, yen, formatMonth, escapeHtml } from "./utils.js";
+import { today, price, formatMonth, escapeHtml } from "./utils.js";
 
 const sheet = document.getElementById("fixedSheet");
 const form = document.getElementById("fixedForm");
@@ -116,7 +116,7 @@ function render() {
         <div class="item ${ended ? "is-expired" : ""}">
           <div class="item-head">
             <span class="item-date">${escapeHtml(fc.name)}</span>
-            <span class="item-amount">${yen(fc.amount)}</span>
+            <span class="item-amount">${price(fc.amount, "m")}</span>
           </div>
           <div class="item-sub">
             ${fc.day === 31 ? "月末" : `毎月${fc.day}日`} ・ ${escapeHtml(fc.category || "未分類")} ・ ${period}${ended ? "（終了）" : ""}

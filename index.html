@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="カード家計簿">
@@ -31,21 +30,17 @@
 
   <!-- メイン画面 -->
   <div id="appView" class="app" hidden>
-    <header id="navbar" class="navbar">
-      <span id="navTitle" class="navbar-title">ホーム</span>
+    <!-- ヘッダー（画面名を中央に表示） -->
+    <header id="navbar" class="header">
+      <span class="header-side"></span>
+      <h1 id="pageTitle" class="header-title">ホーム</h1>
+      <button id="accountBtn" class="avatar" aria-label="アカウントと設定">
+        <img id="avatarImg" alt="" hidden referrerpolicy="no-referrer">
+        <span id="avatarText"></span>
+      </button>
     </header>
 
     <main class="main">
-      <div class="title-row">
-        <div class="title-text">
-          <p id="todayText" class="title-eyebrow"></p>
-          <h1 id="pageTitle" class="large-title">ホーム</h1>
-        </div>
-        <button id="accountBtn" class="avatar" aria-label="アカウントと設定">
-          <img id="avatarImg" alt="" hidden referrerpolicy="no-referrer">
-          <span id="avatarText"></span>
-        </button>
-      </div>
 
       <p id="dataError" class="banner-error" hidden></p>
 

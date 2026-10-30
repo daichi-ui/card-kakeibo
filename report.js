@@ -1,6 +1,6 @@
 // ===== レポート（月ごとの推移とカテゴリ別の内訳） =====
 import { state, subscribe, monthItems, countable, monthTotal } from "./store.js";
-import { today, addMonth, yen, formatMonth, escapeHtml } from "./utils.js";
+import { today, addMonth, yen, price, formatMonth, escapeHtml } from "./utils.js";
 
 const chartEl = document.getElementById("reportChart");
 const catTitleEl = document.getElementById("reportCatTitle");
@@ -97,7 +97,7 @@ function render() {
           <div class="item cat-row">
             <div class="item-head">
               <span class="tx-store">${escapeHtml(cat)}</span>
-              <span class="item-amount">${yen(sum)}</span>
+              <span class="item-amount">${price(sum, "m")}</span>
             </div>
             <div class="cat-bar"><span style="width:${pct}%"></span></div>
             <div class="item-sub">${pct}%</div>
