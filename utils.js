@@ -48,10 +48,11 @@ export function nextPayment(todayStr) {
   return { usageMonth, date: paymentDateOf(usageMonth) };
 }
 
-// 1180 → "¥1,180"、null → "—"
+// 1180 → "¥1,180"、-2400 → "−¥2,400"、null → "—"
 export function yen(n) {
   if (n === null || n === undefined || !Number.isFinite(Number(n))) return "—";
-  return "¥" + Math.round(Number(n)).toLocaleString("ja-JP");
+  const v = Math.round(Number(n));
+  return (v < 0 ? "−" : "") + "¥" + Math.abs(v).toLocaleString("ja-JP");
 }
 
 // "2026-10" → "2026年10月"

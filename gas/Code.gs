@@ -100,33 +100,33 @@ function parseCardMail(body) {
   const lines = text.slice(dt.index + dt[0].length).split("\n")
     .map((l) => l.trim())
     .filter((l) => l !== "");
-  result.excerpt = lines.slice(0, 2).join(" / ").slice(0, 200);
+  result.excerpt = lines.slice(0, 3).join(" / ").slice(0, 200);
 
-  // 「お店 金額円」が1行のとき／お店と金額が別の行のとき の両方を試す
-  const AMOUNT = /^(.*?)\s*([\d,]+)\s*円\s*$/;
-  let storeText = null;
-  let amountText = null;
-  const one = (lines[0] || "").match(AMOUNT);
-  if (one && one[1]) {
-    storeText = one[1];
-    amountText = one[2];
-  } else {
-    const two = (lines[1] || "").match(/^([\d,]+)\s*円\s*$/);
-    if (two) {
-      storeText = lines[0];
-      amountText = two[1];
-    }
-  }
+  // 最初の3行のうち「金額円」で終わる行を探す（取消はマイナス：-2,400円）
+  // 例1：TICKETDIVE(買物)	1,180円
+  // 例2：GO(タクシーアプリ)*アプリ配車 / (取消) / -2,400円
+  const AMOUNT = /([-−‐]?\s*[\d,]+)\s*円\s*$/;
+  const k = lines.slice(0, 3).findIndex((l) => AMOUNT.test(l));
+  if (k >= 0) {
+    const amountText = lines[k].match(AMOUNT)[1];
+    const storeParts = lines.slice(0, k + 1);
+    storeParts[k] = storeParts[k].replace(AMOUNT, "").trim();
+    let store = storeParts.filter(Boolean).join(" ");
 
-  if (storeText !== null) {
-    let store = storeText.trim();
+    // 「(取消)」が付いていたら取消として扱う
+    const isCancel = /\(取消\)/.test(store) || /^[-−‐]/.test(amountText);
+    store = store.replace(/\s*\(取消\)\s*/g, " ").trim();
+
     const kind = store.match(/^(.*?)\s*\(([^()]+)\)$/);
-    if (kind) {
+    if (kind && !isCancel) {
       store = kind[1].trim();
       result.kind = kind[2].trim();
     }
+    if (isCancel) result.kind = "取消";
+
+    const amount = Math.abs(Number(amountText.replace(/[-−‐\s,]/g, "")));
     result.store = store;
-    result.amount = Number(amountText.replace(/,/g, ""));
+    result.amount = isCancel ? -amount : amount;
     result.needsReview = !(result.store && Number.isFinite(result.amount));
   } else {
     // 円以外の金額など、読み取れなかったもの → 要確認として残す
