@@ -1,0 +1,3 @@
+# Firebase のサービスアカウントの鍵は絶対にコミットしない
+*service-account*.json
+*-firebase-adminsdk-*.json
