@@ -53,7 +53,7 @@ function syncCardMails() {
         if (!/statement@vpass\.ne\.jp/i.test(msg.getFrom())) return;
         if (msg.getDate() < parseSlashDate_(CONFIG.startDate)) return;
 
-        const parsed = parseCardMail(msg.getPlainBody());
+        const parsed = parseMessage_(msg);
         const ok = createTransaction_(msg.getId(), parsed, msg.getDate());
         ok ? added++ : skipped++;
       });
@@ -70,45 +70,87 @@ function syncCardMails() {
 }
 
 // ===== メール本文の読み取り =====
+// メールのテキスト版で読めなければ、HTML版を文字だけにして読み直す
+function parseMessage_(msg) {
+  const fromPlain = parseCardMail(msg.getPlainBody());
+  if (!fromPlain.needsReview) return fromPlain;
+  const fromHtml = parseCardMail(htmlToText_(msg.getBody()));
+  if (!fromHtml.needsReview) return fromHtml;
+  return fromHtml.date ? fromHtml : fromPlain;
+}
+
 // 例：
 //   ご利用日時：2026/10/25 13:40
 //   TICKETDIVE（買物）	1,180円
 function parseCardMail(body) {
-  const text = String(body).replace(/\r/g, "");
+  // 全角の英数字・記号を半角にそろえる（例：２０２６／１０ → 2026/10、：→ :）
+  const text = String(body || "").normalize("NFKC").replace(/\r/g, "").replace(/\u00a0/g, " ");
   const result = {
     date: null, time: null, store: null, kind: null, amount: null,
     needsReview: true, excerpt: ""
   };
 
   // 利用日時
-  const dt = text.match(/ご利用日時[：:]\s*(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+  const dt = text.match(/ご利用日時\s*[:：]?\s*(\d{4})\s*\/\s*(\d{1,2})\s*\/\s*(\d{1,2})\s+(\d{1,2})\s*:\s*(\d{2})/);
   if (!dt) return result;
   result.date = `${dt[1]}-${pad2_(dt[2])}-${pad2_(dt[3])}`;
   result.time = `${pad2_(dt[4])}:${dt[5]}`;
 
-  // 利用日時の次にある、空でない行が「お店（種類）　金額円」
-  const after = text.slice(dt.index + dt[0].length).split("\n")
-    .map((l) => l.replace(/ /g, " ").trim())
+  // 利用日時の後ろにある、空でない行（お店と金額）
+  const lines = text.slice(dt.index + dt[0].length).split("\n")
+    .map((l) => l.trim())
     .filter((l) => l !== "");
-  const line = after[0] || "";
-  result.excerpt = line.slice(0, 200);
+  result.excerpt = lines.slice(0, 3).join(" / ").slice(0, 200);
 
-  const m = line.match(/^(.*?)\s*[\t ]+([\d,，]+)\s*円\s*$/);
-  if (m) {
-    let store = m[1].trim();
-    const kind = store.match(/^(.*?)[（(]([^（）()]+)[）)]$/);
-    if (kind) {
+  // 最初の3行のうち「金額円」で終わる行を探す（取消はマイナス：-2,400円）
+  // 例1：TICKETDIVE(買物)	1,180円
+  // 例2：GO(タクシーアプリ)*アプリ配車 / (取消) / -2,400円
+  const AMOUNT = /([-−‐]?\s*[\d,]+)\s*円\s*$/;
+  const k = lines.slice(0, 3).findIndex((l) => AMOUNT.test(l));
+  if (k >= 0) {
+    const amountText = lines[k].match(AMOUNT)[1];
+    const storeParts = lines.slice(0, k + 1);
+    storeParts[k] = storeParts[k].replace(AMOUNT, "").trim();
+    let store = storeParts.filter(Boolean).join(" ");
+
+    // 「(取消)」が付いていたら取消として扱う
+    const isCancel = /\(取消\)/.test(store) || /^[-−‐]/.test(amountText);
+    store = store.replace(/\s*\(取消\)\s*/g, " ").trim();
+
+    const kind = store.match(/^(.*?)\s*\(([^()]+)\)$/);
+    if (kind && !isCancel) {
       store = kind[1].trim();
       result.kind = kind[2].trim();
     }
+    if (isCancel) result.kind = "取消";
+
+    const amount = Math.abs(Number(amountText.replace(/[-−‐\s,]/g, "")));
     result.store = store;
-    result.amount = Number(m[2].replace(/[,，]/g, ""));
+    result.amount = isCancel ? -amount : amount;
     result.needsReview = !(result.store && Number.isFinite(result.amount));
   } else {
     // 円以外の金額など、読み取れなかったもの → 要確認として残す
-    result.store = line.replace(/[\t ]+[^\t ]+$/, "").trim() || "（読み取れませんでした）";
+    result.store = (lines[0] || "").replace(/\s+[^\s]+$/, "").trim() || null;
   }
   return result;
+}
+
+// HTML のメール本文を、改行・タブ付きの文字だけにする
+function htmlToText_(html) {
+  return String(html || "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|li|table|h\d)>/gi, "\n")
+    .replace(/<\/t[dh]>/gi, "\t")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&yen;/g, "¥")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (m, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCharCode(parseInt(n, 16)))
+    .replace(/&amp;/g, "&");
 }
 
 // ===== Firestore への登録 =====
@@ -185,7 +227,81 @@ function testParseLatestMail() {
   if (threads.length === 0) return console.log("対象のメールが見つかりません");
   const msgs = threads[0].getMessages();
   const msg = msgs[msgs.length - 1];
-  console.log(JSON.stringify(parseCardMail(msg.getPlainBody()), null, 2));
+  console.log(JSON.stringify(parseMessage_(msg), null, 2));
+}
+
+// 読み取れなかったときの調査用：本文の「ご利用日時」のまわりだけを表示する
+function debugLatestMail() {
+  const threads = GmailApp.search(CONFIG.query, 0, 1);
+  if (threads.length === 0) return console.log("対象のメールが見つかりません");
+  const msgs = threads[0].getMessages();
+  const msg = msgs[msgs.length - 1];
+  const around = (text) => {
+    const t = String(text || "");
+    const i = t.indexOf("ご利用日時");
+    return i < 0 ? "（「ご利用日時」が見つかりません）先頭：" + JSON.stringify(t.slice(0, 300))
+                 : JSON.stringify(t.slice(Math.max(0, i - 20), i + 150));
+  };
+  console.log("テキスト版：" + around(msg.getPlainBody()));
+  console.log("HTML版　　：" + around(htmlToText_(msg.getBody())));
+}
+
+// ===== 「要確認」になったメールの利用を、もう一度読み直す =====
+// 読み取りを直したあとに1回実行する。読めたものは要確認が外れる
+function reparseReviewItems() {
+  const base = `https://firestore.googleapis.com/v1/projects/${CONFIG.projectId}/databases/(default)/documents`;
+  const headers = { Authorization: `Bearer ${getAccessToken_()}` };
+
+  // 要確認のデータを探す
+  const res = UrlFetchApp.fetch(`${base}:runQuery`, {
+    method: "post",
+    contentType: "application/json",
+    headers,
+    payload: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId: "transactions" }],
+        where: { fieldFilter: { field: { fieldPath: "needsReview" }, op: "EQUAL", value: { booleanValue: true } } }
+      }
+    })
+  });
+  const docs = JSON.parse(res.getContentText()).filter((r) => r.document).map((r) => r.document);
+
+  let fixed = 0;
+  let still = 0;
+  docs.forEach((d) => {
+    if (d.fields.source?.stringValue !== "mail") return;
+    const id = d.name.split("/").pop();
+    let msg;
+    try {
+      msg = GmailApp.getMessageById(id);
+    } catch (e) {
+      still++;
+      return;
+    }
+    const p = parseMessage_(msg);
+    if (p.needsReview) {
+      still++;
+      return;
+    }
+    const fields = {
+      date: str_(p.date),
+      time: str_(p.time),
+      store: str_(p.store),
+      kind: str_(p.kind || ""),
+      amount: { integerValue: String(p.amount) },
+      needsReview: { booleanValue: false },
+      excerpt: str_(p.excerpt || "")
+    };
+    const mask = Object.keys(fields).map((k) => `updateMask.fieldPaths=${k}`).join("&");
+    UrlFetchApp.fetch(`${base}/transactions/${encodeURIComponent(id)}?${mask}`, {
+      method: "patch",
+      contentType: "application/json",
+      headers,
+      payload: JSON.stringify({ fields })
+    });
+    fixed++;
+  });
+  console.log(`読み直して直った ${fixed} 件 / まだ要確認 ${still} 件`);
 }
 
 // ===== 小さな便利関数 =====

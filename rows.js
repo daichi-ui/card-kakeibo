@@ -9,13 +9,14 @@ export function rowHtml(item, { showDate = false } = {}) {
   if (item.type === "fixed") badges.push(`<span class="badge badge-fixed">固定費</span>`);
   if (item.source === "manual") badges.push(`<span class="badge badge-manual">手入力</span>`);
   if (item.needsReview) badges.push(`<span class="badge badge-review">要確認</span>`);
+  if (item.kind === "取消" || Number(item.amount) < 0) badges.push(`<span class="badge badge-cancel">取消</span>`);
   if (item.skipped) badges.push(`<span class="badge badge-skip">この月は削除</span>`);
   if (item.changed) badges.push(`<span class="badge badge-manual">この月だけ変更</span>`);
 
   const sub = [
     showDate ? formatDayWeek(item.date) : "",
     item.time || "",
-    item.kind || "",
+    item.kind && item.kind !== "取消" ? item.kind : "",
     item.category && item.category !== "未分類" ? item.category : ""
   ].filter(Boolean).join(" ・ ");
 
@@ -24,7 +25,7 @@ export function rowHtml(item, { showDate = false } = {}) {
             data-type="${item.type || "tx"}" data-id="${item.id}" data-month="${item.month || ""}">
       <div class="item-head">
         <span class="tx-store">${escapeHtml(item.store || "（お店不明）")}</span>
-        <span class="item-amount">${yen(item.amount)}</span>
+        <span class="item-amount ${Number(item.amount) < 0 ? "is-minus" : ""}">${yen(item.amount)}</span>
       </div>
       ${sub || badges.length ? `<div class="item-sub">${badges.join("")}${escapeHtml(sub)}</div>` : ""}
       ${item.memo ? `<div class="item-memo">${escapeHtml(item.memo)}</div>` : ""}

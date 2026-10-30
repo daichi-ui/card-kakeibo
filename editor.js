@@ -64,7 +64,9 @@ export function openTxEdit(id) {
     f.note.innerHTML = t.needsReview
       ? `<strong>要確認</strong>：メールから金額などを読み取れませんでした。内容を確認して保存してください。${
           t.excerpt ? `<br><span class="sheet-quote">${escapeHtml(t.excerpt)}</span>` : ""}`
-      : "メールから自動で取り込んだ利用です。取消になった利用は削除してください。";
+      : t.amount < 0
+        ? "メールから自動で取り込んだ取消（返金）です。合計から差し引かれます。"
+        : "メールから自動で取り込んだ利用です。";
   } else {
     f.note.hidden = true;
   }
@@ -74,7 +76,8 @@ export function openTxEdit(id) {
 txForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const amount = Number(f.amount.value);
-  if (!Number.isFinite(amount) || amount < 0) {
+  // 取消（返金）はマイナスで入力できる
+  if (!Number.isFinite(amount) || f.amount.value === "") {
     f.msg.textContent = "金額を正しく入力してください";
     f.msg.classList.add("error");
     return;
