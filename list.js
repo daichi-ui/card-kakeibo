@@ -1,55 +1,86 @@
 // ===== 明細（月ごとの利用一覧） =====
-import { state, subscribe, monthItems, countable } from "./store.js";
+//   上：その月の合計と支払日（25日・休業日は翌営業日）
+//   検索・絞り込み・計算からの除外の切り替え
+import { state, subscribe, monthItems, sum } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
 import { openTxNew } from "./editor.js";
-import { today, addMonth, paymentDateOf, yen, price, formatMonth, formatDayWeek, slashDate } from "./utils.js";
+import {
+  today, addMonth, paymentDateOf, isPaymentShifted, yen, price, formatMonth, formatDayWeek, slashDate, swipe
+} from "./utils.js";
 
 const titleEl = document.getElementById("listMonth");
 const summaryEl = document.getElementById("listSummary");
 const bodyEl = document.getElementById("listBody");
+const searchEl = document.getElementById("listSearch");
+const filterEl = document.getElementById("listFilter");
 
 let month = today().slice(0, 7);
+let filter = "all";
+
+// 絞り込みの種類
+const FILTERS = {
+  all: () => true,
+  mail: (i) => i.source === "mail",
+  manual: (i) => i.source === "manual",
+  fixed: (i) => i.type === "fixed",
+  review: (i) => i.needsReview,
+  excluded: (i) => i.excluded
+};
 
 subscribe(render);
 bindRows(bodyEl);
 
 document.getElementById("listPrev").addEventListener("click", () => { month = addMonth(month, -1); render(); });
 document.getElementById("listNext").addEventListener("click", () => { month = addMonth(month, 1); render(); });
+swipe(summaryEl, (dir) => { month = addMonth(month, dir); render(); });
 document.getElementById("listAddBtn").addEventListener("click", () => {
   // 今月なら今日、ほかの月ならその月の1日を初期値にする
   const t = today();
   openTxNew(t.startsWith(month) ? t : `${month}-01`);
 });
-
-// ホームのカードから、指定の月を開く
-window.addEventListener("open-month", (e) => {
-  month = e.detail;
+searchEl.addEventListener("input", render);
+filterEl.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-filter]");
+  if (!btn) return;
+  filter = btn.dataset.filter;
+  filterEl.querySelectorAll("[data-filter]").forEach((b) => b.classList.toggle("is-active", b === btn));
   render();
-  document.querySelector('.tab[data-tab="list"]').click();
+});
+
+// ホームなどから、指定の月を開く
+window.addEventListener("open-month", (e) => {
+  if (e.detail.tab !== "list") return;
+  month = e.detail.month;
+  render();
 });
 
 function render() {
   titleEl.textContent = formatMonth(month);
   if (!state.user) {
-    summaryEl.innerHTML = "";
-    bodyEl.innerHTML = "";
+    summaryEl.innerHTML = bodyEl.innerHTML = "";
     return;
   }
 
-  const items = monthItems(month);
-  const counted = countable(items);
-  const total = counted.reduce((s, i) => s + Number(i.amount), 0);
-  const fixedTotal = counted.filter((i) => i.type === "fixed").reduce((s, i) => s + Number(i.amount), 0);
+  const all = monthItems(month);
+  const fixedTotal = sum(all.filter((i) => i.type === "fixed"));
+  const pay = paymentDateOf(month);
 
   summaryEl.innerHTML = `
-    <div class="month-total">${price(total, "xl")}</div>
-    <div class="month-meta">
-      <span>${slashDate(paymentDateOf(month))} 支払い</span>
-      <span>${counted.length}件${fixedTotal ? ` ・ うち固定費 ${yen(fixedTotal)}` : ""}</span>
-    </div>`;
+    <span class="summary-label">${formatMonth(month)}の合計</span>
+    <span class="summary-amount">${price(sum(all), "xl")}</span>
+    <span class="summary-meta">
+      <span>支払日 <strong>${slashDate(pay)}</strong>${isPaymentShifted(month) ? "（休日のため翌営業日）" : ""}</span>
+      <span>${all.filter((i) => !i.excluded).length}件${fixedTotal ? ` ・ うちサブスク ${yen(fixedTotal)}` : ""}</span>
+    </span>`;
+
+  // 検索（お店・カテゴリ・メモ・種類）と絞り込み
+  const q = searchEl.value.normalize("NFKC").trim().toLowerCase();
+  const items = all.filter(FILTERS[filter]).filter((i) => !q ||
+    [i.store, i.category, i.memo, i.kind].some((v) => String(v || "").normalize("NFKC").toLowerCase().includes(q)));
 
   if (items.length === 0) {
-    bodyEl.innerHTML = `<div class="list"><p class="empty">この月の利用はありません</p></div>`;
+    bodyEl.innerHTML = `<div class="list"><p class="empty">${
+      all.length ? "条件に合う利用はありません" : "この月の利用はありません"}</p></div>`;
     return;
   }
 
@@ -59,14 +90,10 @@ function render() {
 
   bodyEl.innerHTML = Object.keys(byDate)
     .sort((a, b) => b.localeCompare(a))
-    .map((date) => {
-      const rows = byDate[date];
-      const dayTotal = countable(rows).reduce((s, i) => s + Number(i.amount), 0);
-      return `
-        <h3 class="group-title day-title">
-          <span>${formatDayWeek(date)}</span><span>${yen(dayTotal)}</span>
-        </h3>
-        <div class="list">${rows.map((r) => rowHtml(r)).join("")}</div>`;
-    })
+    .map((date) => `
+      <h3 class="section-title day-title">
+        <span>${formatDayWeek(date)}</span><span>${yen(sum(byDate[date]))}</span>
+      </h3>
+      <div class="list">${byDate[date].map((r) => rowHtml(r, { toggle: true })).join("")}</div>`)
     .join("");
 }
