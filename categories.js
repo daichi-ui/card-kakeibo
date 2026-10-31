@@ -1,11 +1,11 @@
 // ===== カテゴリ =====
-//   カテゴリ設定（登録・名前の変更・削除）
 //   入力欄のプルダウン：入力した文字を含むカテゴリだけを出す（空ならすべて）
+//   カテゴリの追加・編集（名前・色・削除）
 import {
   doc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  state, subscribe, categoryRef, txRef, fixedRef, categoryNames, unregisteredCategories, searchCategories, fold
+  state, subscribe, categoryRef, txRef, fixedRef, categoryNames, searchCategories, fold, categoryColor, PALETTE
 } from "./store.js";
 import { escapeHtml, normalizeCategory } from "./utils.js";
 
@@ -13,7 +13,7 @@ import { escapeHtml, normalizeCategory } from "./utils.js";
 export async function ensureCategory(name) {
   const c = normalizeCategory(name);
   if (c === "未分類" || categoryNames().includes(c)) return;
-  await addDoc(categoryRef(), { name: c, order: Date.now(), createdAt: serverTimestamp() });
+  await addDoc(categoryRef(), { name: c, color: categoryColor(c), order: Date.now(), createdAt: serverTimestamp() });
 }
 
 // ===== プルダウン付きの入力欄 =====
@@ -38,9 +38,9 @@ export function attachCategoryInput(input) {
             ? `${escapeHtml(n.slice(0, i))}<mark>${escapeHtml(n.slice(i, i + key.length))}</mark>${escapeHtml(n.slice(i + key.length))}`
             : escapeHtml(n);
           const selected = normalizeCategory(q) === n;
-          return `<button type="button" class="combo-option ${selected ? "is-selected" : ""}" role="option" data-value="${escapeHtml(n)}">${label}</button>`;
+          return `<button type="button" class="combo-option ${selected ? "is-selected" : ""}" role="option" data-value="${escapeHtml(n)}"><span class="dot" style="--c:${categoryColor(n)}"></span>${label}</button>`;
         }).join("")
-      : `<p class="combo-empty">${key ? "新しいカテゴリとして保存されます" : "カテゴリ設定で登録してください"}</p>`;
+      : `<p class="combo-empty">${key ? "新しいカテゴリとして追加されます" : "カテゴリがありません"}</p>`;
   }
 
   function open() {
@@ -91,91 +91,81 @@ export function attachCategoryInput(input) {
   return close;
 }
 
-// ===== カテゴリ設定 =====
+// ===== カテゴリの追加・編集（設定タブから開く） =====
 const sheet = document.getElementById("categorySheet");
 const form = document.getElementById("categoryForm");
+const titleEl = document.getElementById("categoryTitle");
 const nameEl = document.getElementById("categoryName");
-const submitEl = document.getElementById("categorySubmit");
-const cancelEl = document.getElementById("categoryCancel");
-const listEl = document.getElementById("categoryList");
-const unusedTitle = document.getElementById("categoryUnregisteredTitle");
-const unusedEl = document.getElementById("categoryUnregistered");
+const swatchesEl = document.getElementById("categorySwatches");
+const delEl = document.getElementById("categoryDelete");
+const noteEl = document.getElementById("categoryNote");
 const msgEl = document.getElementById("categoryMsg");
 let editingId = null;
+let color = PALETTE.at(0);
 
-export function openCategorySettings() {
-  resetForm();
-  sheet.showModal();
-}
+swatchesEl.innerHTML = PALETTE.map((c) =>
+  `<button type="button" class="swatch" data-color="${c}" style="--c:${c}" aria-label="色 ${c}"></button>`).join("");
+swatchesEl.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-color]");
+  if (b) setColor(b.dataset.color);
+});
 
-function resetForm() {
-  editingId = null;
-  form.reset();
-  submitEl.textContent = "追加";
-  cancelEl.hidden = true;
-  setMsg("");
-}
-
-function setMsg(text, isError = true) {
-  msgEl.textContent = text;
-  msgEl.classList.toggle("error", isError);
+function setColor(c) {
+  color = c;
+  swatchesEl.querySelectorAll("[data-color]").forEach((b) => {
+    b.classList.toggle("is-selected", b.dataset.color === c);
+    b.setAttribute("aria-pressed", String(b.dataset.color === c));
+  });
 }
 
 // カテゴリごとの使用件数
-function usageCount(name) {
+export function usageCount(name) {
   return state.transactions.filter((t) => !t.deleted && normalizeCategory(t.category) === name).length +
     state.fixedCosts.filter((f) => normalizeCategory(f.category) === name).length;
 }
 
-function render() {
-  if (!state.user) return;
-  const sorted = [...state.categories]
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "ja"));
-  listEl.innerHTML = state.categoryError
-    ? `<p class="empty">${escapeHtml(state.categoryError)}</p>`
-    : sorted.length
-      ? sorted.map((c) => `
-          <div class="row ${c.id === editingId ? "is-editing" : ""}">
-            <button type="button" class="row-main" data-edit="${escapeHtml(c.id)}">
-              <span class="row-head">
-                <span class="row-title">${escapeHtml(c.name)}</span>
-                <span class="row-count">${usageCount(c.name)}件</span>
-              </span>
-            </button>
-            <button type="button" class="row-toggle row-delete" data-delete="${escapeHtml(c.id)}" aria-label="${escapeHtml(c.name)}を削除">
-              <svg viewBox="0 0 24 24"><path d="M5 7h14M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg>
-            </button>
-          </div>`).join("")
-      : `<p class="empty">まだありません</p>`;
-
-  const unused = unregisteredCategories();
-  unusedTitle.hidden = unusedEl.hidden = unused.length === 0;
-  unusedEl.innerHTML = unused.length ? `
-    ${unused.map((c) => `<button type="button" class="chip" data-add="${escapeHtml(c)}">＋ ${escapeHtml(c)}</button>`).join("")}
-    ${unused.length > 1 ? `<button type="button" class="chip chip-strong" data-add-all>すべて追加</button>` : ""}` : "";
+// id：編集するカテゴリ。name：未登録のカテゴリを登録するときの名前
+export function openCategorySheet(id = null, name = "") {
+  form.reset();
+  msgEl.textContent = "";
+  const c = id && state.categories.find((x) => x.id === id);
+  editingId = c ? c.id : null;
+  titleEl.textContent = c ? "カテゴリを編集" : "カテゴリを追加";
+  nameEl.value = c ? c.name : name;
+  // 使われていない色を初期値にする
+  const used = new Set(state.categories.map((x) => x.color));
+  setColor(c ? categoryColor(c.name) : name ? categoryColor(name) : PALETTE.find((p) => !used.has(p)) || PALETTE.at(0));
+  delEl.hidden = !c;
+  const count = c ? usageCount(c.name) : 0;
+  noteEl.textContent = count ? `${count}件で使用中` : "";
+  noteEl.hidden = !count;
+  sheet.showModal();
 }
-subscribe(render);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const name = normalizeCategory(nameEl.value);
   if (name === "未分類") return setMsg("名前を入力してください");
-  const dup = state.categories.find((c) => c.name === name && c.id !== editingId);
-  if (dup) return setMsg("同じ名前のカテゴリがあります");
+  if (state.categories.some((c) => c.name === name && c.id !== editingId)) return setMsg("同じ名前のカテゴリがあります");
   try {
     if (editingId) {
       const before = state.categories.find((c) => c.id === editingId);
-      await updateDoc(doc(categoryRef(), editingId), { name });
+      await updateDoc(doc(categoryRef(), editingId), { name, color });
       // 名前を変えたら、そのカテゴリの利用とサブスクもまとめて変える（レポートの表記をそろえる）
       if (before && before.name !== name) await renameEverywhere(before.name, name);
     } else {
-      await addDoc(categoryRef(), { name, order: Date.now(), createdAt: serverTimestamp() });
+      await addDoc(categoryRef(), { name, color, order: Date.now(), createdAt: serverTimestamp() });
     }
-    resetForm();
+    sheet.close();
   } catch (err) {
     setMsg("保存に失敗しました：" + err.message);
   }
 });
+
+function setMsg(text) {
+  msgEl.textContent = text;
+  msgEl.classList.add("error");
+}
 
 async function renameEverywhere(from, to) {
   const txs = state.transactions.filter((t) => normalizeCategory(t.category) === from);
@@ -186,42 +176,19 @@ async function renameEverywhere(from, to) {
   ]);
 }
 
-cancelEl.addEventListener("click", () => { resetForm(); render(); });
-
-listEl.addEventListener("click", async (e) => {
-  const edit = e.target.closest("[data-edit]");
-  const del = e.target.closest("[data-delete]");
-  if (edit) {
-    const c = state.categories.find((x) => x.id === edit.dataset.edit);
-    if (!c) return;
-    editingId = c.id;
-    nameEl.value = c.name;
-    submitEl.textContent = "変更";
-    cancelEl.hidden = false;
-    setMsg("");
-    render();
-    nameEl.focus();
-  }
-  if (del) {
-    const c = state.categories.find((x) => x.id === del.dataset.delete);
-    if (!c || !confirm(`「${c.name}」を削除しますか？`)) return;
-    try {
-      await deleteDoc(doc(categoryRef(), c.id));
-      if (editingId === c.id) resetForm();
-    } catch (err) {
-      setMsg("削除に失敗しました：" + err.message);
-    }
-  }
-});
-
-unusedEl.addEventListener("click", async (e) => {
-  const one = e.target.closest("[data-add]");
-  const all = e.target.closest("[data-add-all]");
-  const names = all ? unregisteredCategories() : one ? [one.dataset.add] : [];
+delEl.addEventListener("click", async () => {
+  const c = state.categories.find((x) => x.id === editingId);
+  if (!c || !confirm(`「${c.name}」を削除しますか？\n使用中の利用のカテゴリ名はそのまま残ります。`)) return;
   try {
-    await Promise.all(names.map((n, i) =>
-      addDoc(categoryRef(), { name: n, order: Date.now() + i, createdAt: serverTimestamp() })));
+    await deleteDoc(doc(categoryRef(), c.id));
+    sheet.close();
   } catch (err) {
-    setMsg("追加に失敗しました：" + err.message);
+    setMsg("削除に失敗しました：" + err.message);
   }
 });
+
+// 未登録のカテゴリをまとめて登録する
+export async function registerAll(names) {
+  await Promise.all(names.map((n, i) =>
+    addDoc(categoryRef(), { name: n, color: categoryColor(n), order: Date.now() + i, createdAt: serverTimestamp() })));
+}

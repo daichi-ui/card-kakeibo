@@ -1,7 +1,7 @@
 // ===== レポート =====
 //   「月」「年」で集計期間を切り替え、矢印かスワイプで前後に移動
 //   円グラフ：カテゴリ別の内訳 / 縦棒グラフ：月ごとの推移
-import { state, subscribe, monthItems, yearItems, monthTotal, sum, categoryTotals } from "./store.js";
+import { state, subscribe, monthItems, yearItems, monthTotal, sum, categoryTotals, categoryColor } from "./store.js";
 import { today, addMonth, yen, signedYen, price, formatMonth, escapeHtml, swipe } from "./utils.js";
 
 const periodEl = document.getElementById("reportPeriod");
@@ -13,8 +13,8 @@ const barTitleEl = document.getElementById("reportBarTitle");
 const barEl = document.getElementById("reportBar");
 const pagerEl = document.getElementById("reportPager");
 
-// 円グラフの色（多い順に使う。8番目以降は「その他」にまとめる）
-const COLORS = ["#0071E3", "#34C759", "#FF9F0A", "#FF375F", "#AF52DE", "#5AC8FA", "#FFCC00"];
+// 円グラフはカテゴリの色で描く。多い順に7つまで、8番目以降は「その他」にまとめる
+const MAX_SLICES = 7;
 const OTHER_COLOR = "#C7C7CC";
 
 let mode = "month";                 // "month" | "year"
@@ -102,9 +102,9 @@ function renderPie(rows, total) {
   }
   // マイナス（返金が多いカテゴリ）は円グラフに入れない
   const positive = rows.filter(([, v]) => v > 0);
-  const top = positive.slice(0, COLORS.length);
-  const rest = positive.slice(COLORS.length).reduce((s, [, v]) => s + v, 0);
-  const slices = top.map(([c, v], i) => ({ c, v, color: COLORS.at(i) }));
+  const top = positive.slice(0, MAX_SLICES);
+  const rest = positive.slice(MAX_SLICES).reduce((s, [, v]) => s + v, 0);
+  const slices = top.map(([c, v]) => ({ c, v, color: categoryColor(c) }));
   if (rest > 0) slices.push({ c: "その他", v: rest, color: OTHER_COLOR });
   const pieTotal = slices.reduce((s, x) => s + x.v, 0);
 
