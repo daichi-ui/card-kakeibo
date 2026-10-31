@@ -1,9 +1,10 @@
 import { auth } from "./firebase.js";
 import { initStore, stopStore, subscribe, state, knownCategories } from "./store.js";
 import "./home.js";
+import "./calendar.js";
+import "./subs.js";
 import "./list.js";
 import "./report.js";
-import { openFixedSettings } from "./fixed.js";
 import {
   GoogleAuthProvider,
   signInWithPopup,
@@ -46,7 +47,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   }
 });
 
-// データの読み込みエラー（許可されていないアカウントなど）と、カテゴリの入力候補
+// データの読み込みエラー（許可されていないアカウントなど）と、カテゴリの入力候補（予測変換）
 subscribe(() => {
   dataError.hidden = !state.error;
   dataError.textContent = state.error || "";
@@ -71,10 +72,6 @@ function setAccount(user) {
 
 document.getElementById("accountBtn").addEventListener("click", () => accountSheet.showModal());
 document.getElementById("accountCancel").addEventListener("click", () => accountSheet.close());
-document.getElementById("openFixedBtn").addEventListener("click", () => {
-  accountSheet.close();
-  openFixedSettings();
-});
 document.getElementById("logoutBtn").addEventListener("click", () => {
   accountSheet.close();
   signOut(auth);
@@ -89,7 +86,7 @@ document.querySelectorAll("dialog").forEach((dialog) => {
 });
 
 // ===== タブ切り替え =====
-const TABS = ["home", "list", "report"];
+const TABS = ["home", "calendar", "subs", "list", "report"];
 
 export function showTab(name) {
   if (!TABS.includes(name)) name = "home";
@@ -107,3 +104,6 @@ export function showTab(name) {
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => showTab(btn.dataset.tab));
 });
+
+// ホームのカードなどから、指定のタブを開く（月の切り替えは各画面が行う）
+window.addEventListener("open-month", (e) => showTab(e.detail.tab));

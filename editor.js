@@ -1,12 +1,38 @@
 // ===== 入力・編集の画面 =====
-//   利用（メール・手入力）の追加／編集／削除
-//   固定費の「この月だけ」の金額変更／削除
+//   利用（Gmail・手入力）の追加／編集／削除／計算からの除外
+//   サブスクの「この月だけ」の金額変更／計算からの除外
+//   カテゴリの入力候補（オートコンプリート）
 import {
   doc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { state, txRef, overrideRef, overrideId } from "./store.js";
-import { today, yen, formatMonth, formatDayWeek, escapeHtml } from "./utils.js";
-import { openFixedSettings } from "./fixed.js";
+import {
+  state, subscribe, txRef, overrideRef, overrideId, knownCategories, rememberCategory
+} from "./store.js";
+import { today, yen, formatMonth, formatDayWeek, escapeHtml, normalizeCategory } from "./utils.js";
+
+// ===== カテゴリの入力候補 =====
+// 入力欄の下に候補を並べ、タップで入力する。入力中の文字で絞り込む
+export function attachCategoryInput(input, chips) {
+  const render = () => {
+    const q = input.value.normalize("NFKC").trim().toLowerCase();
+    const list = knownCategories()
+      .filter((c) => c !== "未分類" && (!q || c.toLowerCase().includes(q)) && c.toLowerCase() !== q)
+      .slice(0, 8);
+    chips.innerHTML = list.map((c) =>
+      `<button type="button" class="chip" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("");
+    chips.hidden = list.length === 0;
+  };
+  input.addEventListener("input", render);
+  input.addEventListener("focus", render);
+  chips.addEventListener("click", (e) => {
+    const chip = e.target.closest("[data-cat]");
+    if (!chip) return;
+    input.value = chip.dataset.cat;
+    render();
+  });
+  subscribe(render);
+  return render;
+}
 
 // ===== 利用の画面 =====
 const txSheet = document.getElementById("txSheet");
@@ -20,10 +46,18 @@ const f = {
   amount: document.getElementById("txAmount"),
   category: document.getElementById("txCategory"),
   memo: document.getElementById("txMemo"),
+  excluded: document.getElementById("txExcluded"),
+  excludedRow: document.getElementById("txExcludedRow"),
   del: document.getElementById("txDelete"),
   msg: document.getElementById("txMsg")
 };
+const renderTxChips = attachCategoryInput(f.category, document.getElementById("txCategoryChips"));
 let editing = null; // 編集中の利用（新規なら null）
+
+function setMsg(el, text) {
+  el.textContent = text;
+  el.classList.toggle("error", !!text);
+}
 
 // 一覧の行をタップしたとき
 export function openItem(item) {
@@ -39,7 +73,9 @@ export function openTxNew(date = today()) {
   f.date.value = date;
   f.note.hidden = true;
   f.del.hidden = true;
-  f.msg.textContent = "";
+  f.excludedRow.hidden = true;
+  setMsg(f.msg, "");
+  renderTxChips();
   txSheet.showModal();
 }
 
@@ -56,7 +92,9 @@ export function openTxEdit(id) {
   f.amount.value = t.amount ?? "";
   f.category.value = t.category && t.category !== "未分類" ? t.category : "";
   f.memo.value = t.memo || "";
-  f.msg.textContent = "";
+  f.excluded.checked = !!t.excluded;
+  f.excludedRow.hidden = false;
+  setMsg(f.msg, "");
   f.del.hidden = false;
 
   if (t.source === "mail") {
@@ -65,11 +103,12 @@ export function openTxEdit(id) {
       ? `<strong>要確認</strong>：メールから金額などを読み取れませんでした。内容を確認して保存してください。${
           t.excerpt ? `<br><span class="sheet-quote">${escapeHtml(t.excerpt)}</span>` : ""}`
       : t.amount < 0
-        ? "メールから自動で取り込んだ取消（返金）です。合計から差し引かれます。"
-        : "メールから自動で取り込んだ利用です。";
+        ? "Gmail から自動で取り込んだ取消（返金）です。合計から差し引かれます。"
+        : "Gmail から自動で取り込んだ利用です。サブスクと重なるときは「計算から除外」をオンにしてください。";
   } else {
     f.note.hidden = true;
   }
+  renderTxChips();
   txSheet.showModal();
 }
 
@@ -78,29 +117,28 @@ txForm.addEventListener("submit", async (e) => {
   const amount = Number(f.amount.value);
   // 取消（返金）はマイナスで入力できる
   if (!Number.isFinite(amount) || f.amount.value === "") {
-    f.msg.textContent = "金額を正しく入力してください";
-    f.msg.classList.add("error");
-    return;
+    return setMsg(f.msg, "金額を正しく入力してください");
   }
+  const category = normalizeCategory(f.category.value);
   const data = {
     date: f.date.value,
     time: f.time.value || "",
-    store: f.store.value.trim(),
+    store: f.store.value.trim() || "手入力",
     amount: Math.round(amount),
-    category: f.category.value.trim() || "未分類",
+    category,
     memo: f.memo.value.trim(),
     needsReview: false // 保存したら確認済み
   };
   try {
     if (editing) {
-      await updateDoc(doc(txRef(), editing.id), data);
+      await updateDoc(doc(txRef(), editing.id), { ...data, excluded: f.excluded.checked });
     } else {
-      await addDoc(txRef(), { ...data, source: "manual", createdAt: serverTimestamp() });
+      await addDoc(txRef(), { ...data, excluded: false, source: "manual", createdAt: serverTimestamp() });
     }
+    rememberCategory(category);
     txSheet.close();
   } catch (err) {
-    f.msg.textContent = "保存に失敗しました：" + err.message;
-    f.msg.classList.add("error");
+    setMsg(f.msg, "保存に失敗しました：" + err.message);
   }
 });
 
@@ -115,68 +153,74 @@ f.del.addEventListener("click", async () => {
     }
     txSheet.close();
   } catch (err) {
-    f.msg.textContent = "削除に失敗しました：" + err.message;
-    f.msg.classList.add("error");
+    setMsg(f.msg, "削除に失敗しました：" + err.message);
   }
 });
 
-// ===== 固定費（この月の分）の画面 =====
+// ===== 計算からの除外を切り替える（一覧の丸いボタン） =====
+export async function toggleExcluded(item) {
+  try {
+    if (item.type === "fixed") {
+      await saveOverride(item, { skipped: !item.excluded });
+    } else {
+      await updateDoc(doc(txRef(), item.id), { excluded: !item.excluded });
+    }
+  } catch (err) {
+    alert("切り替えに失敗しました：" + err.message);
+  }
+}
+
+// ===== サブスク（この月の分）の画面 =====
 const itemSheet = document.getElementById("fixedItemSheet");
 const itemForm = document.getElementById("fixedItemForm");
 const it = {
   title: document.getElementById("fixedItemTitle"),
   note: document.getElementById("fixedItemNote"),
   amount: document.getElementById("fixedItemAmount"),
-  skip: document.getElementById("fixedItemSkip"),
-  restore: document.getElementById("fixedItemRestore"),
-  reset: document.getElementById("fixedItemReset")
+  excluded: document.getElementById("fixedItemExcluded"),
+  reset: document.getElementById("fixedItemReset"),
+  edit: document.getElementById("fixedItemEdit")
 };
-let current = null; // 開いている固定費（この月の分）
+let current = null; // 開いているサブスク（この月の分）
 
 function openFixedItem(item) {
   current = item;
-  const base = state.fixedCosts.find((x) => x.id === item.fixedId);
   it.title.textContent = item.store;
-  it.note.innerHTML = `${formatMonth(item.month)}の固定費（${formatDayWeek(item.date)}）<br>いつもの金額：${yen(base?.amount)}
-    ・<button type="button" class="link-button" id="fixedItemOpenSettings">固定費の設定</button>`;
+  it.note.textContent = `${formatMonth(item.month)}の分（${formatDayWeek(item.date)}）・いつもの金額 ${yen(item.baseAmount)}`;
   it.amount.value = item.amount;
-  it.amount.disabled = item.skipped;
-  it.skip.hidden = item.skipped;
-  it.restore.hidden = !item.skipped;
-  it.reset.hidden = !item.changed || item.skipped;
-  document.getElementById("fixedItemSubmit").hidden = item.skipped;
-  document.getElementById("fixedItemOpenSettings").onclick = () => {
-    itemSheet.close();
-    openFixedSettings(item.fixedId);
-  };
+  it.excluded.checked = item.excluded;
+  it.reset.hidden = !item.changed;
   itemSheet.showModal();
 }
 
 // この月だけの変更を保存する（skipped / amount）
-async function saveOverride(changes) {
-  const id = overrideId(current.fixedId, current.month);
+async function saveOverride(item, changes) {
+  const id = overrideId(item.fixedId, item.month);
   const prev = state.fixedOverrides.find((o) => o.id === id) || {};
   await setDoc(doc(overrideRef(), id), {
-    fixedId: current.fixedId,
-    month: current.month,
+    fixedId: item.fixedId,
+    month: item.month,
     skipped: prev.skipped ?? false,
     amount: prev.amount ?? null,
     ...changes
   });
-  itemSheet.close();
 }
 
-itemForm.addEventListener("submit", (e) => {
+itemForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const amount = Math.round(Number(it.amount.value));
   if (!Number.isFinite(amount) || amount < 0) return;
-  const base = state.fixedCosts.find((x) => x.id === current.fixedId);
-  saveOverride({ amount: amount === Number(base?.amount) ? null : amount });
+  await saveOverride(current, {
+    amount: amount === current.baseAmount ? null : amount,
+    skipped: it.excluded.checked
+  });
+  itemSheet.close();
 });
-it.skip.addEventListener("click", () => {
-  if (confirm(`${formatMonth(current.month)}の「${current.store}」だけを削除しますか？\n（翌月以降はそのまま残ります）`)) {
-    saveOverride({ skipped: true });
-  }
+it.reset.addEventListener("click", async () => {
+  await saveOverride(current, { amount: null });
+  itemSheet.close();
 });
-it.restore.addEventListener("click", () => saveOverride({ skipped: false }));
-it.reset.addEventListener("click", () => saveOverride({ amount: null }));
+it.edit.addEventListener("click", () => {
+  itemSheet.close();
+  window.dispatchEvent(new CustomEvent("edit-subscription", { detail: current.fixedId }));
+});

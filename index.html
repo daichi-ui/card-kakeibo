@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#F5F5F7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="カード家計簿">
@@ -30,11 +30,10 @@
 
   <!-- メイン画面 -->
   <div id="appView" class="app" hidden>
-    <!-- ヘッダー（画面名を中央に表示） -->
+    <!-- ヘッダー（大きな画面名） -->
     <header id="navbar" class="header">
-      <span class="header-side"></span>
       <h1 id="pageTitle" class="header-title">ホーム</h1>
-      <button id="accountBtn" class="avatar" aria-label="アカウントと設定">
+      <button id="accountBtn" class="avatar" aria-label="アカウント">
         <img id="avatarImg" alt="" hidden referrerpolicy="no-referrer">
         <span id="avatarText"></span>
       </button>
@@ -46,43 +45,123 @@
 
       <!-- ===== ホーム ===== -->
       <section id="tab-home" class="page" data-title="ホーム">
-        <div id="payCard" class="pay-card"></div>
-        <div id="monthCard" class="stat-row"></div>
+        <div id="payCard"></div>
+        <div id="statGrid" class="stat-grid"></div>
 
         <div id="reviewArea"></div>
 
         <button id="homeAddBtn" class="btn btn-tinted btn-block">手入力で追加</button>
 
-        <h2 class="group-title">最近の利用</h2>
+        <h2 class="section-title">最近の利用</h2>
         <div id="recentList" class="list"></div>
+      </section>
+
+      <!-- ===== カレンダー ===== -->
+      <section id="tab-calendar" class="page" data-title="カレンダー" hidden>
+        <div class="month-nav">
+          <button id="calPrev" class="icon-button" aria-label="前の月">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <h2 id="calMonth" class="month-title"></h2>
+          <button id="calNext" class="icon-button" aria-label="次の月">
+            <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+          <button id="calToday" class="pill-button" hidden>今月に戻る</button>
+        </div>
+        <div class="card cal-card">
+          <div id="calGrid" class="cal-grid"></div>
+        </div>
+        <p class="section-note">日付をタップすると、その日の支出を入力できます。</p>
+
+        <div id="calSummary" class="card summary"></div>
+
+        <h2 class="section-title">利用履歴</h2>
+        <div id="calHistory" class="list"></div>
+      </section>
+
+      <!-- ===== サブスク ===== -->
+      <section id="tab-subs" class="page" data-title="サブスク" hidden>
+        <div class="month-nav">
+          <button id="subsPrev" class="icon-button" aria-label="前の月">
+            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+          </button>
+          <h2 id="subsMonth" class="month-title"></h2>
+          <button id="subsNext" class="icon-button" aria-label="次の月">
+            <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div id="subsSummary" class="card summary"></div>
+
+        <h2 class="section-title">この月の明細に入るサブスク</h2>
+        <div id="subsMonthList" class="list"></div>
+        <p class="section-note">Gmail でも同じ利用が届いた月は、右の丸いボタンで「計算から除外」にすると二重になりません。タップすると、この月だけ金額を変えられます。</p>
+
+        <h2 class="section-title">登録中のサブスク</h2>
+        <div id="subsAllList" class="list"></div>
+        <button id="subsAddBtn" class="btn btn-tinted btn-block">サブスクを追加</button>
       </section>
 
       <!-- ===== 明細 ===== -->
       <section id="tab-list" class="page" data-title="明細" hidden>
         <div class="month-nav">
-          <button id="listPrev" class="cal-nav" aria-label="前の月">
+          <button id="listPrev" class="icon-button" aria-label="前の月">
             <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
           </button>
           <h2 id="listMonth" class="month-title"></h2>
-          <button id="listNext" class="cal-nav" aria-label="次の月">
+          <button id="listNext" class="icon-button" aria-label="次の月">
             <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
-        <div id="listSummary" class="month-summary"></div>
+        <div id="listSummary" class="card summary"></div>
+
+        <div class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          <input type="search" id="listSearch" placeholder="お店・カテゴリ・メモで検索" aria-label="検索">
+        </div>
+        <div id="listFilter" class="chips-scroll" role="group" aria-label="絞り込み">
+          <button type="button" class="chip is-active" data-filter="all">すべて</button>
+          <button type="button" class="chip" data-filter="mail">Gmail</button>
+          <button type="button" class="chip" data-filter="manual">手入力</button>
+          <button type="button" class="chip" data-filter="fixed">サブスク</button>
+          <button type="button" class="chip" data-filter="review">要確認</button>
+          <button type="button" class="chip" data-filter="excluded">除外中</button>
+        </div>
+
         <div id="listBody"></div>
         <button id="listAddBtn" class="btn btn-tinted btn-block list-add">この月に手入力で追加</button>
       </section>
 
       <!-- ===== レポート ===== -->
       <section id="tab-report" class="page" data-title="レポート" hidden>
-        <h2 class="group-title">月ごとの利用額</h2>
-        <div class="group chart-card">
-          <div id="reportChart"></div>
+        <div id="reportMode" class="segmented" role="group" aria-label="集計期間">
+          <button type="button" data-mode="month" class="is-active">月</button>
+          <button type="button" data-mode="year">年</button>
         </div>
-        <p class="group-note">棒をタップすると、その月の内訳を表示します。</p>
 
-        <h2 id="reportCatTitle" class="group-title"></h2>
-        <div id="reportCats" class="list"></div>
+        <div id="reportPager">
+          <div class="month-nav">
+            <button id="reportPrev" class="icon-button" aria-label="前へ">
+              <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+            </button>
+            <h2 id="reportPeriod" class="month-title"></h2>
+            <button id="reportNext" class="icon-button" aria-label="次へ">
+              <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <div id="reportSummary" class="card summary"></div>
+
+          <h2 class="section-title">カテゴリ別の内訳</h2>
+          <div class="card pie-card">
+            <div id="reportPie"></div>
+            <div id="reportLegend" class="legend"></div>
+          </div>
+        </div>
+
+        <h2 id="reportBarTitle" class="section-title"></h2>
+        <div class="card chart-card">
+          <div id="reportBar"></div>
+        </div>
+        <p class="section-note">左右にスワイプすると期間を移動できます。棒をタップすると、その月を表示します。</p>
       </section>
     </main>
 
@@ -92,12 +171,20 @@
         <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
         <span>ホーム</span>
       </button>
+      <button class="tab" data-tab="calendar">
+        <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
+        <span>カレンダー</span>
+      </button>
+      <button class="tab" data-tab="subs">
+        <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg>
+        <span>サブスク</span>
+      </button>
       <button class="tab" data-tab="list">
         <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
         <span>明細</span>
       </button>
       <button class="tab" data-tab="report">
-        <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>
         <span>レポート</span>
       </button>
     </nav>
@@ -110,7 +197,6 @@
         <span class="action-header-title">ログイン中のアカウント</span>
         <span id="accountEmail" class="action-header-sub"></span>
       </div>
-      <button type="button" id="openFixedBtn" class="action-button">固定費の設定</button>
       <button type="button" id="logoutBtn" class="action-button action-danger">ログアウト</button>
     </div>
     <div class="action-group">
@@ -140,7 +226,7 @@
         </label>
         <label class="field">
           <span class="field-label">お店</span>
-          <input type="text" id="txStore" maxlength="100" placeholder="例：コンビニ" required>
+          <input type="text" id="txStore" maxlength="100" placeholder="例：コンビニ">
         </label>
         <label class="field">
           <span class="field-label">金額（円）</span>
@@ -148,13 +234,22 @@
         </label>
         <label class="field">
           <span class="field-label">カテゴリ</span>
-          <input type="text" id="txCategory" maxlength="30" list="categoryList" placeholder="未分類">
+          <input type="text" id="txCategory" maxlength="30" list="categoryList" placeholder="未分類" autocomplete="off">
         </label>
         <label class="field">
           <span class="field-label">メモ</span>
           <input type="text" id="txMemo" maxlength="100" placeholder="任意">
         </label>
       </div>
+      <div id="txCategoryChips" class="chips" hidden></div>
+
+      <div id="txExcludedRow" class="group group-gap" hidden>
+        <label class="field field-switch">
+          <span class="field-label">計算から除外</span>
+          <input type="checkbox" id="txExcluded" class="switch" role="switch">
+        </label>
+      </div>
+      <p class="group-note">サブスクと二重になった利用などは、除外すると合計に入らなくなります（明細には取り消し線で残ります）。</p>
 
       <div class="group group-gap">
         <button type="button" id="txDelete" class="row-button row-danger" hidden>この利用を削除</button>
@@ -163,13 +258,44 @@
     </form>
   </dialog>
 
-  <!-- ===== 固定費（この月の分） ===== -->
+  <!-- ===== カレンダー：その日の支出 ===== -->
+  <dialog id="daySheet" class="sheet">
+    <form id="dayForm">
+      <div class="sheet-bar">
+        <button type="button" class="nav-link" data-close>閉じる</button>
+        <h2 id="dayTitle" class="sheet-title"></h2>
+        <button type="submit" class="nav-link nav-link-bold">追加</button>
+      </div>
+
+      <div class="group">
+        <label class="field">
+          <span class="field-label">金額（円）</span>
+          <input type="number" id="dayAmount" step="1" inputmode="numeric" placeholder="0" required>
+        </label>
+        <label class="field">
+          <span class="field-label">お店</span>
+          <input type="text" id="dayStore" maxlength="100" placeholder="任意">
+        </label>
+        <label class="field">
+          <span class="field-label">カテゴリ</span>
+          <input type="text" id="dayCategory" maxlength="30" list="categoryList" placeholder="未分類" autocomplete="off">
+        </label>
+      </div>
+      <div id="dayCategoryChips" class="chips" hidden></div>
+      <p id="dayMsg" class="msg"></p>
+
+      <h3 class="section-title"><span>この日の利用</span><span id="dayTotal"></span></h3>
+      <div id="dayList" class="list"></div>
+    </form>
+  </dialog>
+
+  <!-- ===== サブスク（この月の分） ===== -->
   <dialog id="fixedItemSheet" class="sheet">
     <form id="fixedItemForm">
       <div class="sheet-bar">
         <button type="button" class="nav-link" data-close>閉じる</button>
-        <h2 id="fixedItemTitle" class="sheet-title">固定費</h2>
-        <button type="submit" id="fixedItemSubmit" class="nav-link nav-link-bold">保存</button>
+        <h2 id="fixedItemTitle" class="sheet-title">サブスク</h2>
+        <button type="submit" class="nav-link nav-link-bold">保存</button>
       </div>
 
       <p id="fixedItemNote" class="sheet-note"></p>
@@ -179,65 +305,63 @@
           <span class="field-label">この月の金額（円）</span>
           <input type="number" id="fixedItemAmount" min="0" step="1" inputmode="numeric" required>
         </label>
+        <label class="field field-switch">
+          <span class="field-label">この月は計算から除外</span>
+          <input type="checkbox" id="fixedItemExcluded" class="switch" role="switch">
+        </label>
       </div>
-      <p class="group-note">金額を変えても、この月だけに反映されます。翌月以降はいつもの金額のままです。</p>
+      <p class="group-note">金額の変更と除外は、この月だけに反映されます。翌月以降はいつもの金額のままです。</p>
 
       <div class="group group-gap">
-        <button type="button" id="fixedItemSkip" class="row-button row-danger">この月だけ削除</button>
-        <button type="button" id="fixedItemRestore" class="row-button" hidden>この月の固定費を元に戻す</button>
         <button type="button" id="fixedItemReset" class="row-button" hidden>金額をいつもの金額に戻す</button>
+        <button type="button" id="fixedItemEdit" class="row-button">サブスクの設定を編集</button>
       </div>
-      <p class="group-note">メールでも同じ利用が届いた月は「この月だけ削除」で二重を防げます。</p>
     </form>
   </dialog>
 
-  <!-- ===== 固定費の設定 ===== -->
-  <dialog id="fixedSheet" class="sheet sheet-tall">
-    <div class="sheet-bar">
-      <span></span>
-      <h2 class="sheet-title">固定費の設定</h2>
-      <button type="button" class="nav-link nav-link-bold" data-close>完了</button>
-    </div>
+  <!-- ===== サブスクの追加・編集 ===== -->
+  <dialog id="subSheet" class="sheet">
+    <form id="subForm">
+      <div class="sheet-bar">
+        <button type="button" class="nav-link" data-close>キャンセル</button>
+        <h2 id="subTitle" class="sheet-title">サブスクを追加</h2>
+        <button type="submit" class="nav-link nav-link-bold">保存</button>
+      </div>
 
-    <form id="fixedForm">
-      <h3 id="fixedFormTitle" class="group-title">固定費を追加</h3>
       <div class="group">
         <label class="field">
           <span class="field-label">名前</span>
-          <input type="text" id="fixedName" maxlength="50" placeholder="例：携帯料金" required>
+          <input type="text" id="subName" maxlength="50" placeholder="例：携帯料金" required>
         </label>
         <label class="field">
           <span class="field-label">金額（円）</span>
-          <input type="number" id="fixedAmount" min="0" step="1" inputmode="numeric" placeholder="1000" required>
+          <input type="number" id="subAmount" min="0" step="1" inputmode="numeric" placeholder="1000" required>
         </label>
         <label class="field">
           <span class="field-label">引き落とし日</span>
-          <select id="fixedDay"></select>
+          <select id="subDay"></select>
         </label>
         <label class="field">
           <span class="field-label">カテゴリ</span>
-          <input type="text" id="fixedCategory" maxlength="30" list="categoryList" placeholder="未分類">
+          <input type="text" id="subCategory" maxlength="30" list="categoryList" placeholder="未分類" autocomplete="off">
         </label>
         <label class="field">
           <span class="field-label">開始月</span>
-          <input type="month" id="fixedStart" required>
+          <input type="month" id="subStart" required>
         </label>
         <label class="field">
           <span class="field-label">終了月</span>
-          <input type="month" id="fixedEnd">
+          <input type="month" id="subEnd">
         </label>
       </div>
+      <div id="subCategoryChips" class="chips" hidden></div>
       <p class="group-note">解約したら終了月を入れてください。空欄ならずっと続きます。</p>
 
-      <div class="form-actions">
-        <button type="submit" id="fixedSubmit" class="btn btn-primary btn-block">追加する</button>
-        <button type="button" id="fixedCancel" class="btn btn-plain btn-block" hidden>編集をやめる</button>
+      <div class="group group-gap">
+        <button type="button" id="subDelete" class="row-button row-danger" hidden>このサブスクを削除</button>
       </div>
-      <p id="fixedMsg" class="msg"></p>
+      <p id="subMsg" class="msg"></p>
     </form>
-
-    <h3 class="group-title">登録済みの固定費</h3>
-    <div id="fixedList" class="list"></div>
   </dialog>
 
   <datalist id="categoryList"></datalist>
