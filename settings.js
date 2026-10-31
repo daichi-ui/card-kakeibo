@@ -4,7 +4,7 @@ import { auth } from "./firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { state, subscribe, isActiveIn, unregisteredCategories, categoryColor, monthFixedTotal, storesMatching } from "./store.js";
 import { openSubSheet } from "./subs.js";
-import { openCategorySheet, usageCount, registerAll } from "./categories.js";
+import { openCategorySheet, registerAll } from "./categories.js";
 import { openStoreIconSheet } from "./storeicons.js";
 import { itemIcon } from "./rows.js";
 import { today, price, yen, formatMonth, escapeHtml } from "./utils.js";
@@ -91,7 +91,7 @@ function render() {
       <button type="button" class="cell" data-cat="${escapeHtml(c.id)}">
         <span class="dot dot-l" style="--c:${categoryColor(c.name)}"></span>
         <span class="cell-text"><span class="cell-title">${escapeHtml(c.name)}</span></span>
-        <span class="cell-value cell-quiet">${usageCount(c.name)}件</span>${CHEVRON}
+        ${CHEVRON}
       </button>`).join("");
 
   const unreg = unregisteredCategories();
