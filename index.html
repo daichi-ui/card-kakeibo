@@ -126,11 +126,11 @@
         </div>
 
         <h2 class="section-title">お店のアイコン</h2>
-        <p id="storeIconError" class="banner-error" hidden></p>
         <div class="cells">
-          <div id="storeIconList"></div>
-          <button type="button" id="storeIconAdd" class="cell cell-add">
-            <span class="add-icon">＋</span><span class="cell-text"><span class="cell-title">お店のアイコンを追加</span></span>
+          <button type="button" id="storeIconOpen" class="cell">
+            <span id="storeIconStack" class="icon-stack"></span>
+            <span class="cell-text"><span class="cell-title">登録したアイコン</span><span id="storeIconSummary" class="cell-sub"></span></span>
+            <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
 
@@ -357,6 +357,21 @@
       </div>
       <p id="categoryMsg" class="msg"></p>
     </form>
+  </dialog>
+
+  <!-- ===== お店のアイコンの一覧 ===== -->
+  <dialog id="storeIconListSheet" tabindex="-1" class="sheet sheet-tall">
+    <div class="sheet-bar">
+      <button type="button" class="nav-link" data-close>閉じる</button>
+      <h2 class="sheet-title">お店のアイコン</h2>
+      <button type="button" id="storeIconAdd" class="nav-link nav-link-bold">追加</button>
+    </div>
+    <p id="storeIconError" class="banner-error" hidden></p>
+    <div id="storeIconSearchWrap" class="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+      <input type="search" id="storeIconSearch" placeholder="お店の名前で検索" aria-label="お店の名前で検索">
+    </div>
+    <div id="storeIconList" class="icon-grid"></div>
   </dialog>
 
   <!-- ===== お店のアイコンの追加・編集 ===== -->
