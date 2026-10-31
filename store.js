@@ -4,6 +4,7 @@
 //   fixedCosts     … サブスク（固定費）のひな形
 //   fixedOverrides … サブスクの「この月だけ」の変更（計算から除外・金額変更）
 //   categories     … カテゴリの一覧（カテゴリ設定で登録）
+//   storeIcons     … お店のアイコン（お店の名前の一部と画像）
 // どの画面も monthItems() を通してデータを見るので、
 // Gmail・手入力・サブスクの合計はすべての画面で同じになる
 import { db } from "./firebase.js";
@@ -18,6 +19,7 @@ export const state = {
   fixedCosts: [],
   fixedOverrides: [],
   categories: [],
+  storeIcons: [],
   error: null
 };
 
@@ -36,6 +38,7 @@ export const txRef = () => collection(db, "transactions");
 export const fixedRef = () => collection(db, "fixedCosts");
 export const overrideRef = () => collection(db, "fixedOverrides");
 export const categoryRef = () => collection(db, "categories");
+export const storeIconRef = () => collection(db, "storeIcons");
 
 // ===== 開始／終了 =====
 export function initStore(user) {
@@ -45,6 +48,14 @@ export function initStore(user) {
     state[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     notify();
   }, (err) => {
+    if (key === "storeIcons") {
+      // お店のアイコンが読めなくても、ほかの画面は使えるようにする
+      state.storeIconError = err.code === "permission-denied"
+        ? "お店のアイコンを読み込めません。Firestore のルールで storeIcons を許可してください。"
+        : "お店のアイコンの読み込みに失敗しました：" + err.message;
+      notify();
+      return;
+    }
     if (key === "categories") {
       // カテゴリだけ読めないときは、ほかの画面は使えるようにする
       state.categoryError = err.code === "permission-denied"
@@ -63,14 +74,15 @@ export function initStore(user) {
     watch(txRef(), "transactions"),
     watch(fixedRef(), "fixedCosts"),
     watch(overrideRef(), "fixedOverrides"),
-    watch(categoryRef(), "categories")
+    watch(categoryRef(), "categories"),
+    watch(storeIconRef(), "storeIcons")
   ];
 }
 
 export function stopStore() {
   unsubscribes.forEach((fn) => fn());
   unsubscribes = [];
-  Object.assign(state, { user: null, transactions: [], fixedCosts: [], fixedOverrides: [], categories: [], error: null, categoryError: null });
+  Object.assign(state, { user: null, transactions: [], fixedCosts: [], fixedOverrides: [], categories: [], storeIcons: [], error: null, categoryError: null, storeIconError: null });
   notify();
 }
 
@@ -224,4 +236,39 @@ export function categoryColor(name) {
   let h = 0;
   for (const ch of n) h = (h * 31 + ch.codePointAt(0)) >>> 0;
   return PALETTE.at(h % PALETTE.length);
+}
+
+// ===== お店のアイコン =====
+// お店の名前に、登録した名前（の一部）が含まれていればその画像を使う
+// 全角半角・大文字小文字・ひらがなカタカナ・空白・記号（ー - ・ . など）の違いは無視
+// いくつも当てはまるときは長い名前を優先
+// 例：「ｾﾌﾞﾝ-ｲﾚﾌﾞﾝ」「セブン－イレブン　渋谷店」→ 登録名「セブン」の画像
+export function storeKey(str) {
+  return fold(str).replace(/[‐－―ー−\-・･.,'’&＆*＊()（）]/g, "");
+}
+
+let iconCache = { list: null, map: new Map() };
+
+export function storeIconFor(store) {
+  if (!store || state.storeIcons.length === 0) return "";
+  if (iconCache.list !== state.storeIcons) iconCache = { list: state.storeIcons, map: new Map() };
+  if (iconCache.map.has(store)) return iconCache.map.get(store);
+  const key = storeKey(store);
+  const hit = state.storeIcons
+    .filter((r) => r.keyword && r.icon && key.includes(storeKey(r.keyword)))
+    .sort((a, b) => storeKey(b.keyword).length - storeKey(a.keyword).length)
+    .at(0);
+  const icon = hit ? hit.icon : "";
+  iconCache.map.set(store, icon);
+  return icon;
+}
+
+// 登録した名前に当てはまるお店の名前（重複なし）
+export function storesMatching(keyword) {
+  const k = storeKey(keyword);
+  if (!k) return [];
+  const names = new Set();
+  state.transactions.forEach((t) => !t.deleted && t.store && storeKey(t.store).includes(k) && names.add(t.store));
+  state.fixedCosts.forEach((f) => f.name && storeKey(f.name).includes(k) && names.add(f.name));
+  return [...names];
 }

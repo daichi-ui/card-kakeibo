@@ -1140,6 +1140,17 @@ dialog::backdrop {
 .icon-picker-btn img { width: 100%; height: 100%; object-fit: cover; }
 .icon-picker-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-weight: 600; }
 
+/* お店のアイコン */
+.store-icon-pick { display: flex; justify-content: center; margin: 4px 0 18px; }
+.icon-picker-l { width: 96px; height: 96px; border-radius: 26px; }
+.icon-picker-l svg { width: 34px; height: 34px; }
+.group-note { margin: 8px 6px 0; color: var(--muted); font-size: 13px; }
+.matches { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 4px 0; }
+.matches:empty { display: none; }
+.match-label { width: 100%; color: var(--muted); font-size: 13px; font-weight: 600; }
+.match-chip { padding: 4px 10px; border-radius: 999px; background: var(--surface); box-shadow: var(--lift); font-size: 13px; }
+.match-more { padding: 4px 4px; color: var(--muted); font-size: 13px; }
+
 /* カテゴリのプルダウン：入力欄のすぐ下に開き、入力中の文字を隠さない */
 .combo { position: relative; scroll-margin-top: 72px; }
 .combo-arrow { flex: none; width: 16px; height: 16px; margin-right: -4px; color: var(--muted); transition: transform .25s var(--spring); }

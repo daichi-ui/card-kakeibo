@@ -3,10 +3,11 @@
 //   タップで編集、左にスワイプで「除外」ボタン
 import { price, formatDayWeek, escapeHtml, normalizeCategory } from "./utils.js";
 import { openItem, toggleExcluded } from "./editor.js";
-import { state, monthItems, categoryColor } from "./store.js";
+import { state, monthItems, categoryColor, storeIconFor } from "./store.js";
 
-// サブスクに画像があれば画像、なければカテゴリの頭文字を色付きの丸に入れる
-export function itemIcon(category, icon, size = "m") {
+// 画像の選び方：サブスクに設定した画像 → お店のアイコン（名前で判定）→ カテゴリの頭文字
+export function itemIcon(category, icon, store = "", size = "m") {
+  if (!icon) icon = storeIconFor(store);
   if (icon && icon.startsWith("data:image/")) {
     return `<img class="cat-icon cat-icon-${size} cat-icon-img" src="${escapeHtml(icon)}" alt="">`;
   }
@@ -44,7 +45,7 @@ export function rowHtml(item, { showDate = false } = {}) {
         ${item.excluded ? "戻す" : "除外"}
       </button>
       <button type="button" class="row-main" data-action="open">
-        ${itemIcon(item.category, item.icon)}
+        ${itemIcon(item.category, item.icon, item.store)}
         <span class="row-text">
           <span class="row-title">${escapeHtml(item.store || "（お店不明）")}</span>
           <span class="row-sub">${badge}${escapeHtml(sub)}</span>

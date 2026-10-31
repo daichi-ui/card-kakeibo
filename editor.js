@@ -5,9 +5,10 @@ import {
   doc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  state, txRef, overrideRef, overrideId
+  state, txRef, overrideRef, overrideId, storeKey
 } from "./store.js";
 import { attachCategoryInput, ensureCategory } from "./categories.js";
+import { openStoreIconSheet } from "./storeicons.js";
 import { today, yen, formatMonth, escapeHtml, normalizeCategory } from "./utils.js";
 
 // ===== 利用の画面 =====
@@ -25,6 +26,7 @@ const f = {
   excluded: document.getElementById("txExcluded"),
   excludedRow: document.getElementById("txExcludedRow"),
   del: document.getElementById("txDelete"),
+  storeIcon: document.getElementById("txStoreIcon"),
   msg: document.getElementById("txMsg")
 };
 const closeTxCategory = attachCategoryInput(f.category);
@@ -54,6 +56,7 @@ export function openTxNew(date = today(), prefill = {}) {
   f.note.hidden = true;
   f.del.hidden = true;
   f.excludedRow.hidden = true;
+  f.storeIcon.hidden = true;
   setMsg(f.msg, "");
   closeTxCategory();
   txSheet.showModal();
@@ -74,6 +77,7 @@ export function openTxEdit(id) {
   f.memo.value = t.memo || "";
   f.excluded.checked = !!t.excluded;
   f.excludedRow.hidden = false;
+  f.storeIcon.hidden = !t.store || t.needsReview;
   setMsg(f.msg, "");
   f.del.hidden = false;
 
@@ -117,6 +121,19 @@ txForm.addEventListener("submit", async (e) => {
   } catch (err) {
     setMsg(f.msg, "保存に失敗しました：" + err.message);
   }
+});
+
+// このお店のアイコンを設定（すでに当てはまる登録があればそれを開く）
+f.storeIcon.addEventListener("click", () => {
+  if (!editing) return;
+  const store = editing.store || "";
+  const key = storeKey(store);
+  const hit = state.storeIcons
+    .filter((r) => key.includes(storeKey(r.keyword)))
+    .sort((a, b) => storeKey(b.keyword).length - storeKey(a.keyword).length)
+    .at(0);
+  txSheet.close();
+  openStoreIconSheet(hit ? hit.id : null, hit ? "" : store);
 });
 
 f.del.addEventListener("click", async () => {

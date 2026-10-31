@@ -2,9 +2,10 @@
 //   サブスク（毎月の固定費）・カテゴリ・アカウント
 import { auth } from "./firebase.js";
 import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { state, subscribe, isActiveIn, unregisteredCategories, categoryColor, monthFixedTotal } from "./store.js";
+import { state, subscribe, isActiveIn, unregisteredCategories, categoryColor, monthFixedTotal, storesMatching } from "./store.js";
 import { openSubSheet } from "./subs.js";
 import { openCategorySheet, usageCount, registerAll } from "./categories.js";
+import { openStoreIconSheet } from "./storeicons.js";
 import { itemIcon } from "./rows.js";
 import { today, price, yen, formatMonth, escapeHtml } from "./utils.js";
 
@@ -13,6 +14,8 @@ const subsListEl = document.getElementById("subsList");
 const catListEl = document.getElementById("catList");
 const catUnregEl = document.getElementById("catUnregistered");
 const catErrorEl = document.getElementById("catError");
+const storeListEl = document.getElementById("storeIconList");
+const storeErrorEl = document.getElementById("storeIconError");
 
 const CHEVRON = `<svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>`;
 
@@ -20,6 +23,11 @@ subscribe(render);
 
 document.getElementById("subsAdd").addEventListener("click", () => openSubSheet());
 document.getElementById("catAdd").addEventListener("click", () => openCategorySheet());
+document.getElementById("storeIconAdd").addEventListener("click", () => openStoreIconSheet());
+storeListEl.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-store-icon]");
+  if (b) openStoreIconSheet(b.dataset.storeIcon);
+});
 document.getElementById("logoutBtn").addEventListener("click", () => {
   if (confirm("ログアウトしますか？")) signOut(auth);
 });
@@ -56,11 +64,23 @@ function render() {
       ].join(" ・ ");
       return `
         <button type="button" class="cell ${ended ? "is-dim" : ""}" data-sub="${escapeHtml(f.id)}">
-          ${itemIcon(f.category, f.icon)}
+          ${itemIcon(f.category, f.icon, f.name)}
           <span class="cell-text"><span class="cell-title">${escapeHtml(f.name)}</span><span class="cell-sub">${escapeHtml(sub)}</span></span>
           <span class="cell-value">${price(f.amount, "s")}</span>${CHEVRON}
         </button>`;
     }).join("");
+
+  // ===== お店のアイコン =====
+  storeErrorEl.hidden = !state.storeIconError;
+  storeErrorEl.textContent = state.storeIconError || "";
+  storeListEl.innerHTML = [...state.storeIcons]
+    .sort((a, b) => a.keyword.localeCompare(b.keyword, "ja"))
+    .map((r) => `
+      <button type="button" class="cell" data-store-icon="${escapeHtml(r.id)}">
+        <img class="cat-icon cat-icon-img" src="${escapeHtml(r.icon)}" alt="">
+        <span class="cell-text"><span class="cell-title">${escapeHtml(r.keyword)}</span></span>
+        <span class="cell-value cell-quiet">${storesMatching(r.keyword).length}件</span>${CHEVRON}
+      </button>`).join("");
 
   // ===== カテゴリ =====
   catErrorEl.hidden = !state.categoryError;
