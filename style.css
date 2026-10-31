@@ -1136,6 +1136,19 @@ dialog::backdrop {
   transition: transform .2s var(--spring);
 }
 .icon-picker-btn:active { transform: scale(.94); }
+.icon-picker-btn { position: relative; cursor: pointer; }
+.icon-picker-preview { display: contents; }
+/* ファイルの入力欄は見えなくして、ボタン全体に重ねる（タップがそのまま入力欄に届く） */
+.file-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+.icon-picker-btn:has(.file-input:focus-visible) { outline: 3px solid rgba(10, 132, 255, .45); outline-offset: 2px; }
 .icon-picker-btn svg { width: 26px; height: 26px; stroke-width: 1.7; }
 .icon-picker-btn img { width: 100%; height: 100%; object-fit: cover; }
 .icon-picker-text { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; font-weight: 600; }

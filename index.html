@@ -282,12 +282,15 @@
       </div>
 
       <div class="icon-picker">
-        <button type="button" id="subIconBtn" class="icon-picker-btn" aria-label="アイコン画像を選ぶ"></button>
+        <!-- 画像を選ぶ：iPhone の Safari でも確実に開くよう、ファイルの入力欄そのものをタップさせる -->
+        <label class="icon-picker-btn">
+          <span id="subIconBtn" class="icon-picker-preview"></span>
+          <input type="file" id="subIconFile" class="file-input" accept="image/*" aria-label="アイコン画像を選ぶ">
+        </label>
         <div class="icon-picker-text">
           <span>アイコン</span>
           <button type="button" id="subIconRemove" class="link-button" hidden>画像を外す</button>
         </div>
-        <input type="file" id="subIconFile" accept="image/*" hidden>
       </div>
 
       <label class="amount-input">
@@ -366,8 +369,10 @@
       </div>
 
       <div class="store-icon-pick">
-        <button type="button" id="storeIconBtn" class="icon-picker-btn icon-picker-l" aria-label="画像を選ぶ"></button>
-        <input type="file" id="storeIconFile" accept="image/*" hidden>
+        <label class="icon-picker-btn icon-picker-l">
+          <span id="storeIconBtn" class="icon-picker-preview"></span>
+          <input type="file" id="storeIconFile" class="file-input" accept="image/*" aria-label="画像を選ぶ">
+        </label>
       </div>
 
       <div class="group">
