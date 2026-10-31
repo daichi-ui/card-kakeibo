@@ -199,25 +199,59 @@ svg {
 /* ===== 画面の骨組み ===== */
 .app { min-height: 100vh; }
 
+/* ヘッダー：上は透明なバー。スクロールするとすりガラスになり、小さな画面名が出る */
 .header {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: calc(var(--header-h) + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) 20px 0;
-  background: rgba(245, 245, 247, .82);
+  display: grid;
+  place-items: center;
+  height: calc(44px + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 16px 0;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition: background .25s, border-color .25s;
+}
+.header.is-scrolled {
+  background: rgba(245, 245, 247, .8);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
+  border-bottom-color: var(--separator);
 }
-.header-title {
+.bar-title {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity .2s, transform .2s;
+}
+.header.is-scrolled .bar-title { opacity: 1; transform: none; }
+
+.large-title {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 640px;
+  margin: -6px auto 0;
+  padding: 0 20px 14px;
+}
+.large-title .avatar { margin-bottom: 4px; }
+.large-title-date {
+  display: block;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+.large-title-text {
   margin: 0;
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 700;
-  letter-spacing: -.02em;
+  line-height: 1.2;
+  letter-spacing: -.025em;
 }
 .avatar {
   position: relative;
@@ -347,7 +381,6 @@ svg {
 .is-down { color: var(--green); }
 
 #reviewArea:not(:empty) { margin-bottom: 8px; }
-#homeAddBtn { margin-top: 20px; }
 
 /* ===== 月の切り替え・合計 ===== */
 .month-nav {
@@ -531,14 +564,85 @@ svg {
 .chip:active { opacity: .6; }
 .chip.is-active { background: var(--text); color: #fff; }
 
-/* 入力欄の下のカテゴリ候補 */
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 10px 4px 0;
+  margin: 0 4px;
 }
-.chips .chip { box-shadow: none; background: var(--accent-bg); color: var(--accent); font-size: 13px; padding: 6px 12px; }
+.chips .chip { box-shadow: none; background: var(--accent-bg); color: var(--accent); font-size: 14px; }
+.chips .chip-strong { background: var(--accent); color: #fff; }
+
+/* カテゴリのプルダウン：入力欄のすぐ下に開き、入力中の文字を隠さない */
+.combo { position: relative; scroll-margin-top: 72px; }
+.combo + .field::before,
+.field + .combo::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  border-top: 1px solid var(--separator);
+}
+.combo-arrow {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: -4px;
+  color: var(--text-2);
+  transition: transform .2s;
+}
+.combo.is-open .combo-arrow { transform: rotate(180deg); color: var(--accent); }
+.combo.is-open .field { background: rgba(0, 113, 227, .04); }
+.combo-list {
+  display: none;
+  max-height: 232px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--separator);
+  background: var(--bg);
+}
+.combo.is-open .combo-list { display: block; }
+.combo-option {
+  display: block;
+  width: 100%;
+  padding: 12px 16px 12px 32px;
+  text-align: left;
+  font-size: 16px;
+}
+.combo-option + .combo-option { border-top: 1px solid var(--separator); }
+.combo-option mark { background: none; color: var(--accent); font-weight: 700; }
+.combo-option:active,
+.combo-option.is-active { background: var(--accent-bg); }
+.combo-option.is-selected { color: var(--accent); font-weight: 600; }
+.combo-empty { margin: 0; padding: 14px 16px 14px 32px; color: var(--text-2); font-size: 14px; }
+
+/* カテゴリ設定 */
+.inline-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 16px;
+  border-radius: var(--radius-s);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.inline-form input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: none;
+  background: none;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+}
+.btn-small { min-height: 38px; padding: 0 18px; border-radius: 10px; font-size: 15px; }
+#categoryList { margin-top: 16px; }
+.row-count { color: var(--text-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+.row-delete { color: var(--red); }
+.row.is-editing .row-main { background: var(--accent-bg); }
 
 /* ===== カレンダー ===== */
 .cal-card { padding: 12px 10px 10px; }
@@ -581,13 +685,15 @@ svg {
 .cal-day.is-sat .cal-num { color: var(--accent); }
 .cal-day.is-today .cal-num { background: var(--accent); color: #fff; font-weight: 700; }
 .cal-amount {
-  font-size: 10.5px;
+  max-width: 100%;
+  font-size: 10px;
   font-weight: 600;
   line-height: 1.2;
   color: var(--text);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.cal-amount .is-long { font-size: 8.5px; letter-spacing: -.03em; }
 .cal-day.has-spend { background: rgba(0, 113, 227, .06); }
 #calSummary { margin-top: 16px; }
 

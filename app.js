@@ -1,5 +1,6 @@
 import { auth } from "./firebase.js";
-import { initStore, stopStore, subscribe, state, knownCategories } from "./store.js";
+import { initStore, stopStore, subscribe, state } from "./store.js";
+import { openCategorySettings } from "./categories.js";
 import "./home.js";
 import "./calendar.js";
 import "./subs.js";
@@ -11,7 +12,6 @@ import {
   signOut,
   onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { escapeHtml } from "./utils.js";
 
 // ===== 画面の要素 =====
 const loading = document.getElementById("loading");
@@ -19,6 +19,8 @@ const loginView = document.getElementById("loginView");
 const appView = document.getElementById("appView");
 const loginError = document.getElementById("loginError");
 const pageTitle = document.getElementById("pageTitle");
+const barTitle = document.getElementById("barTitle");
+const header = document.getElementById("navbar");
 const accountSheet = document.getElementById("accountSheet");
 const dataError = document.getElementById("dataError");
 
@@ -47,12 +49,10 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   }
 });
 
-// データの読み込みエラー（許可されていないアカウントなど）と、カテゴリの入力候補（予測変換）
+// データの読み込みエラー（許可されていないアカウントなど）
 subscribe(() => {
   dataError.hidden = !state.error;
   dataError.textContent = state.error || "";
-  document.getElementById("categoryList").innerHTML =
-    knownCategories().map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
 });
 
 // ===== アカウントボタン（右上の丸いアイコン） =====
@@ -72,6 +72,10 @@ function setAccount(user) {
 
 document.getElementById("accountBtn").addEventListener("click", () => accountSheet.showModal());
 document.getElementById("accountCancel").addEventListener("click", () => accountSheet.close());
+document.getElementById("openCategoryBtn").addEventListener("click", () => {
+  accountSheet.close();
+  openCategorySettings();
+});
 document.getElementById("logoutBtn").addEventListener("click", () => {
   accountSheet.close();
   signOut(auth);
@@ -96,7 +100,9 @@ export function showTab(name) {
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === name);
   });
-  pageTitle.textContent = document.getElementById(`tab-${name}`).dataset.title;
+  const title = document.getElementById(`tab-${name}`).dataset.title;
+  pageTitle.textContent = title;
+  barTitle.textContent = title;
   history.replaceState(null, "", `#${name}`);
   window.scrollTo(0, 0);
 }
@@ -107,3 +113,11 @@ document.querySelectorAll(".tab").forEach((btn) => {
 
 // ホームのカードなどから、指定のタブを開く（月の切り替えは各画面が行う）
 window.addEventListener("open-month", (e) => showTab(e.detail.tab));
+
+// ===== ヘッダー =====
+// 大きな画面名の上に今日の日付。スクロールすると上のバーに小さな画面名が出る
+document.getElementById("todayLabel").textContent =
+  new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" });
+const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 44);
+window.addEventListener("scroll", onScroll, { passive: true });
+onScroll();

@@ -2,9 +2,9 @@
 //   1か月のカレンダー（日ごとの支出合計）→ 日付をタップでその日の明細とクイック入力
 //   下に月の合計と、その月の利用履歴
 import { addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { state, subscribe, txRef, monthItems, dayItems, sum, rememberCategory } from "./store.js";
+import { state, subscribe, txRef, monthItems, dayItems, sum } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
-import { attachCategoryInput } from "./editor.js";
+import { attachCategoryInput, ensureCategory } from "./categories.js";
 import {
   today, addMonth, daysInMonth, parseDate, price, formatMonth, formatDayWeek, holidayName,
   normalizeCategory, WEEK, swipe
@@ -31,11 +31,10 @@ gridEl.addEventListener("click", (e) => {
   if (cell) openDay(cell.dataset.date);
 });
 
-// 1万以上は「1.2万」、それ未満は「8,400」とセルに収まる表記にする
+// セルの金額は省略せずに表示する（桁が多いときは文字を小さくする）
 function cellYen(v) {
-  if (Math.abs(v) >= 100000) return `${Math.round(v / 10000)}万`;
-  if (Math.abs(v) >= 10000) return `${Number((v / 10000).toFixed(1))}万`;
-  return v.toLocaleString("ja-JP");
+  const text = v.toLocaleString("ja-JP");
+  return `<span class="${text.length >= 7 ? "is-long" : ""}">${text}</span>`;
 }
 
 function render() {
@@ -83,9 +82,9 @@ function render() {
   // ===== 月の合計 =====
   const counted = items.filter((i) => !i.excluded);
   summaryEl.innerHTML = `
-    <span class="summary-label">${formatMonth(month)}の合計</span>
+    <span class="summary-label">合計</span>
     <span class="summary-amount">${price(sum(items), "xl")}</span>
-    <span class="summary-meta">${counted.length}件 ・ ${byDay.size}日利用</span>`;
+    <span class="summary-meta">${counted.length}件</span>`;
 
   // ===== 利用履歴（新しい順） =====
   historyEl.innerHTML = items.length
@@ -103,7 +102,7 @@ const dayAmount = document.getElementById("dayAmount");
 const dayStore = document.getElementById("dayStore");
 const dayCategory = document.getElementById("dayCategory");
 const dayMsg = document.getElementById("dayMsg");
-const renderDayChips = attachCategoryInput(dayCategory, document.getElementById("dayCategoryChips"));
+const closeDayCategory = attachCategoryInput(dayCategory);
 let dayDate = null;
 
 bindRows(dayListEl);
@@ -130,7 +129,7 @@ function openDay(date) {
   dayMsg.textContent = "";
   daySheet.showModal();
   renderDay();
-  renderDayChips();
+  closeDayCategory();
 }
 
 dayForm.addEventListener("submit", async (e) => {
@@ -155,11 +154,11 @@ dayForm.addEventListener("submit", async (e) => {
       source: "manual",
       createdAt: serverTimestamp()
     });
-    rememberCategory(category);
+    ensureCategory(category);
     dayForm.reset();
     dayMsg.classList.remove("error");
     dayMsg.textContent = "追加しました";
-    renderDayChips();
+    closeDayCategory();
   } catch (err) {
     dayMsg.textContent = "保存に失敗しました：" + err.message;
     dayMsg.classList.add("error");

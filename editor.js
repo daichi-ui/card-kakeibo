@@ -1,38 +1,14 @@
 // ===== 入力・編集の画面 =====
 //   利用（Gmail・手入力）の追加／編集／削除／計算からの除外
 //   サブスクの「この月だけ」の金額変更／計算からの除外
-//   カテゴリの入力候補（オートコンプリート）
 import {
   doc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  state, subscribe, txRef, overrideRef, overrideId, knownCategories, rememberCategory
+  state, txRef, overrideRef, overrideId
 } from "./store.js";
-import { today, yen, formatMonth, formatDayWeek, escapeHtml, normalizeCategory } from "./utils.js";
-
-// ===== カテゴリの入力候補 =====
-// 入力欄の下に候補を並べ、タップで入力する。入力中の文字で絞り込む
-export function attachCategoryInput(input, chips) {
-  const render = () => {
-    const q = input.value.normalize("NFKC").trim().toLowerCase();
-    const list = knownCategories()
-      .filter((c) => c !== "未分類" && (!q || c.toLowerCase().includes(q)) && c.toLowerCase() !== q)
-      .slice(0, 8);
-    chips.innerHTML = list.map((c) =>
-      `<button type="button" class="chip" data-cat="${escapeHtml(c)}">${escapeHtml(c)}</button>`).join("");
-    chips.hidden = list.length === 0;
-  };
-  input.addEventListener("input", render);
-  input.addEventListener("focus", render);
-  chips.addEventListener("click", (e) => {
-    const chip = e.target.closest("[data-cat]");
-    if (!chip) return;
-    input.value = chip.dataset.cat;
-    render();
-  });
-  subscribe(render);
-  return render;
-}
+import { attachCategoryInput, ensureCategory } from "./categories.js";
+import { today, yen, formatMonth, escapeHtml, normalizeCategory } from "./utils.js";
 
 // ===== 利用の画面 =====
 const txSheet = document.getElementById("txSheet");
@@ -51,7 +27,7 @@ const f = {
   del: document.getElementById("txDelete"),
   msg: document.getElementById("txMsg")
 };
-const renderTxChips = attachCategoryInput(f.category, document.getElementById("txCategoryChips"));
+const closeTxCategory = attachCategoryInput(f.category);
 let editing = null; // 編集中の利用（新規なら null）
 
 function setMsg(el, text) {
@@ -75,7 +51,7 @@ export function openTxNew(date = today()) {
   f.del.hidden = true;
   f.excludedRow.hidden = true;
   setMsg(f.msg, "");
-  renderTxChips();
+  closeTxCategory();
   txSheet.showModal();
 }
 
@@ -100,15 +76,12 @@ export function openTxEdit(id) {
   if (t.source === "mail") {
     f.note.hidden = false;
     f.note.innerHTML = t.needsReview
-      ? `<strong>要確認</strong>：メールから金額などを読み取れませんでした。内容を確認して保存してください。${
-          t.excerpt ? `<br><span class="sheet-quote">${escapeHtml(t.excerpt)}</span>` : ""}`
-      : t.amount < 0
-        ? "Gmail から自動で取り込んだ取消（返金）です。合計から差し引かれます。"
-        : "Gmail から自動で取り込んだ利用です。サブスクと重なるときは「計算から除外」をオンにしてください。";
+      ? `<strong>要確認</strong>${t.excerpt ? `<span class="sheet-quote">${escapeHtml(t.excerpt)}</span>` : ""}`
+      : "Gmail から取り込み";
   } else {
     f.note.hidden = true;
   }
-  renderTxChips();
+  closeTxCategory();
   txSheet.showModal();
 }
 
@@ -135,7 +108,7 @@ txForm.addEventListener("submit", async (e) => {
     } else {
       await addDoc(txRef(), { ...data, excluded: false, source: "manual", createdAt: serverTimestamp() });
     }
-    rememberCategory(category);
+    ensureCategory(category);
     txSheet.close();
   } catch (err) {
     setMsg(f.msg, "保存に失敗しました：" + err.message);
@@ -186,7 +159,7 @@ let current = null; // 開いているサブスク（この月の分）
 function openFixedItem(item) {
   current = item;
   it.title.textContent = item.store;
-  it.note.textContent = `${formatMonth(item.month)}の分（${formatDayWeek(item.date)}）・いつもの金額 ${yen(item.baseAmount)}`;
+  it.note.textContent = `${formatMonth(item.month)}分 ・ 通常 ${yen(item.baseAmount)}`;
   it.amount.value = item.amount;
   it.excluded.checked = item.excluded;
   it.reset.hidden = !item.changed;

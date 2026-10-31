@@ -30,14 +30,20 @@
 
   <!-- メイン画面 -->
   <div id="appView" class="app" hidden>
-    <!-- ヘッダー（大きな画面名） -->
+    <!-- ヘッダー：スクロールすると小さな画面名のバーになる -->
     <header id="navbar" class="header">
-      <h1 id="pageTitle" class="header-title">ホーム</h1>
+      <span id="barTitle" class="bar-title" aria-hidden="true">ホーム</span>
+    </header>
+    <div class="large-title">
+      <div>
+        <span id="todayLabel" class="large-title-date"></span>
+        <h1 id="pageTitle" class="large-title-text">ホーム</h1>
+      </div>
       <button id="accountBtn" class="avatar" aria-label="アカウント">
         <img id="avatarImg" alt="" hidden referrerpolicy="no-referrer">
         <span id="avatarText"></span>
       </button>
-    </header>
+    </div>
 
     <main class="main">
 
@@ -49,11 +55,6 @@
         <div id="statGrid" class="stat-grid"></div>
 
         <div id="reviewArea"></div>
-
-        <button id="homeAddBtn" class="btn btn-tinted btn-block">手入力で追加</button>
-
-        <h2 class="section-title">最近の利用</h2>
-        <div id="recentList" class="list"></div>
       </section>
 
       <!-- ===== カレンダー ===== -->
@@ -71,7 +72,6 @@
         <div class="card cal-card">
           <div id="calGrid" class="cal-grid"></div>
         </div>
-        <p class="section-note">日付をタップすると、その日の支出を入力できます。</p>
 
         <div id="calSummary" class="card summary"></div>
 
@@ -92,11 +92,10 @@
         </div>
         <div id="subsSummary" class="card summary"></div>
 
-        <h2 class="section-title">この月の明細に入るサブスク</h2>
+        <h2 class="section-title">この月</h2>
         <div id="subsMonthList" class="list"></div>
-        <p class="section-note">Gmail でも同じ利用が届いた月は、右の丸いボタンで「計算から除外」にすると二重になりません。タップすると、この月だけ金額を変えられます。</p>
 
-        <h2 class="section-title">登録中のサブスク</h2>
+        <h2 class="section-title">登録中</h2>
         <div id="subsAllList" class="list"></div>
         <button id="subsAddBtn" class="btn btn-tinted btn-block">サブスクを追加</button>
       </section>
@@ -116,7 +115,7 @@
 
         <div class="search">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-          <input type="search" id="listSearch" placeholder="お店・カテゴリ・メモで検索" aria-label="検索">
+          <input type="search" id="listSearch" placeholder="検索" aria-label="検索">
         </div>
         <div id="listFilter" class="chips-scroll" role="group" aria-label="絞り込み">
           <button type="button" class="chip is-active" data-filter="all">すべて</button>
@@ -161,7 +160,6 @@
         <div class="card chart-card">
           <div id="reportBar"></div>
         </div>
-        <p class="section-note">左右にスワイプすると期間を移動できます。棒をタップすると、その月を表示します。</p>
       </section>
     </main>
 
@@ -197,6 +195,7 @@
         <span class="action-header-title">ログイン中のアカウント</span>
         <span id="accountEmail" class="action-header-sub"></span>
       </div>
+      <button type="button" id="openCategoryBtn" class="action-button">カテゴリ設定</button>
       <button type="button" id="logoutBtn" class="action-button action-danger">ログアウト</button>
     </div>
     <div class="action-group">
@@ -232,16 +231,19 @@
           <span class="field-label">金額（円）</span>
           <input type="number" id="txAmount" step="1" inputmode="numeric" placeholder="0" required>
         </label>
-        <label class="field">
-          <span class="field-label">カテゴリ</span>
-          <input type="text" id="txCategory" maxlength="30" list="categoryList" placeholder="未分類" autocomplete="off">
-        </label>
+        <div class="combo">
+          <label class="field">
+            <span class="field-label">カテゴリ</span>
+            <input type="text" id="txCategory" maxlength="30" placeholder="未分類" autocomplete="off" role="combobox" aria-autocomplete="list">
+            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+          </label>
+          <div class="combo-list" role="listbox"></div>
+        </div>
         <label class="field">
           <span class="field-label">メモ</span>
           <input type="text" id="txMemo" maxlength="100" placeholder="任意">
         </label>
       </div>
-      <div id="txCategoryChips" class="chips" hidden></div>
 
       <div id="txExcludedRow" class="group group-gap" hidden>
         <label class="field field-switch">
@@ -249,7 +251,6 @@
           <input type="checkbox" id="txExcluded" class="switch" role="switch">
         </label>
       </div>
-      <p class="group-note">サブスクと二重になった利用などは、除外すると合計に入らなくなります（明細には取り消し線で残ります）。</p>
 
       <div class="group group-gap">
         <button type="button" id="txDelete" class="row-button row-danger" hidden>この利用を削除</button>
@@ -276,12 +277,15 @@
           <span class="field-label">お店</span>
           <input type="text" id="dayStore" maxlength="100" placeholder="任意">
         </label>
-        <label class="field">
-          <span class="field-label">カテゴリ</span>
-          <input type="text" id="dayCategory" maxlength="30" list="categoryList" placeholder="未分類" autocomplete="off">
-        </label>
+        <div class="combo">
+          <label class="field">
+            <span class="field-label">カテゴリ</span>
+            <input type="text" id="dayCategory" maxlength="30" placeholder="未分類" autocomplete="off" role="combobox" aria-autocomplete="list">
+            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+          </label>
+          <div class="combo-list" role="listbox"></div>
+        </div>
       </div>
-      <div id="dayCategoryChips" class="chips" hidden></div>
       <p id="dayMsg" class="msg"></p>
 
       <h3 class="section-title"><span>この日の利用</span><span id="dayTotal"></span></h3>
@@ -302,19 +306,18 @@
 
       <div class="group">
         <label class="field">
-          <span class="field-label">この月の金額（円）</span>
+          <span class="field-label">今月の金額（円）</span>
           <input type="number" id="fixedItemAmount" min="0" step="1" inputmode="numeric" required>
         </label>
         <label class="field field-switch">
-          <span class="field-label">この月は計算から除外</span>
+          <span class="field-label">計算から除外</span>
           <input type="checkbox" id="fixedItemExcluded" class="switch" role="switch">
         </label>
       </div>
-      <p class="group-note">金額の変更と除外は、この月だけに反映されます。翌月以降はいつもの金額のままです。</p>
 
       <div class="group group-gap">
-        <button type="button" id="fixedItemReset" class="row-button" hidden>金額をいつもの金額に戻す</button>
-        <button type="button" id="fixedItemEdit" class="row-button">サブスクの設定を編集</button>
+        <button type="button" id="fixedItemReset" class="row-button" hidden>通常の金額に戻す</button>
+        <button type="button" id="fixedItemEdit" class="row-button">サブスクを編集</button>
       </div>
     </form>
   </dialog>
@@ -341,10 +344,14 @@
           <span class="field-label">引き落とし日</span>
           <select id="subDay"></select>
         </label>
-        <label class="field">
-          <span class="field-label">カテゴリ</span>
-          <input type="text" id="subCategory" maxlength="30" list="categoryList" placeholder="未分類" autocomplete="off">
-        </label>
+        <div class="combo">
+          <label class="field">
+            <span class="field-label">カテゴリ</span>
+            <input type="text" id="subCategory" maxlength="30" placeholder="未分類" autocomplete="off" role="combobox" aria-autocomplete="list">
+            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+          </label>
+          <div class="combo-list" role="listbox"></div>
+        </div>
         <label class="field">
           <span class="field-label">開始月</span>
           <input type="month" id="subStart" required>
@@ -354,8 +361,6 @@
           <input type="month" id="subEnd">
         </label>
       </div>
-      <div id="subCategoryChips" class="chips" hidden></div>
-      <p class="group-note">解約したら終了月を入れてください。空欄ならずっと続きます。</p>
 
       <div class="group group-gap">
         <button type="button" id="subDelete" class="row-button row-danger" hidden>このサブスクを削除</button>
@@ -364,7 +369,27 @@
     </form>
   </dialog>
 
-  <datalist id="categoryList"></datalist>
+
+  <!-- ===== カテゴリ設定 ===== -->
+  <dialog id="categorySheet" class="sheet">
+    <div class="sheet-bar">
+      <span></span>
+      <h2 class="sheet-title">カテゴリ設定</h2>
+      <button type="button" class="nav-link nav-link-bold" data-close>完了</button>
+    </div>
+
+    <form id="categoryForm" class="inline-form">
+      <input type="text" id="categoryName" maxlength="30" placeholder="カテゴリ名" autocomplete="off" required>
+      <button type="button" id="categoryCancel" class="nav-link" hidden>やめる</button>
+      <button type="submit" id="categorySubmit" class="btn btn-primary btn-small">追加</button>
+    </form>
+    <p id="categoryMsg" class="msg"></p>
+
+    <div id="categoryList" class="list"></div>
+
+    <h3 id="categoryUnregisteredTitle" class="section-title" hidden>未登録</h3>
+    <div id="categoryUnregistered" class="chips" hidden></div>
+  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>

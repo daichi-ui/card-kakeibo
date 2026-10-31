@@ -5,9 +5,9 @@
 import {
   doc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { state, subscribe, fixedRef, monthItems, sum, isActiveIn, rememberCategory } from "./store.js";
+import { state, subscribe, fixedRef, monthItems, sum, isActiveIn } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
-import { attachCategoryInput } from "./editor.js";
+import { attachCategoryInput, ensureCategory } from "./categories.js";
 import { today, addMonth, price, formatMonth, escapeHtml, normalizeCategory } from "./utils.js";
 
 const monthEl = document.getElementById("subsMonth");
@@ -42,9 +42,9 @@ function render() {
   const excluded = items.filter((i) => i.excluded).length;
 
   summaryEl.innerHTML = `
-    <span class="summary-label">${formatMonth(month)}のサブスク合計</span>
+    <span class="summary-label">サブスク合計</span>
     <span class="summary-amount">${price(sum(items), "xl")}</span>
-    <span class="summary-meta">${items.length}件${excluded ? ` ・ ${excluded}件を計算から除外` : ""}</span>`;
+    <span class="summary-meta">${items.length}件${excluded ? ` ・ 除外 ${excluded}件` : ""}</span>`;
 
   monthListEl.innerHTML = items.length
     ? items.map((i) => rowHtml(i, { showDate: true, toggle: true })).join("")
@@ -90,7 +90,7 @@ const el = {
   del: document.getElementById("subDelete"),
   msg: document.getElementById("subMsg")
 };
-const renderChips = attachCategoryInput(el.category, document.getElementById("subCategoryChips"));
+const closeCategory = attachCategoryInput(el.category);
 let editingId = null;
 
 // 引き落とし日の選択肢（1日〜31日。31日は月末として扱う）
@@ -111,7 +111,7 @@ function openSubSheet(id = null) {
   el.category.value = fc?.category && fc.category !== "未分類" ? fc.category : "";
   el.start.value = fc ? fc.startMonth || "" : today().slice(0, 7);
   el.end.value = fc?.endMonth || "";
-  renderChips();
+  closeCategory();
   sheet.showModal();
 }
 
@@ -133,7 +133,7 @@ form.addEventListener("submit", async (e) => {
   try {
     if (editingId) await updateDoc(doc(fixedRef(), editingId), data);
     else await addDoc(fixedRef(), { ...data, createdAt: serverTimestamp() });
-    rememberCategory(data.category);
+    ensureCategory(data.category);
     sheet.close();
   } catch (err) {
     el.msg.textContent = "保存に失敗しました：" + err.message;
