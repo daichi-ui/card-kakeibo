@@ -5,7 +5,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-aut
 import { state, subscribe, isActiveIn, unregisteredCategories, categoryColor, monthFixedTotal } from "./store.js";
 import { openSubSheet } from "./subs.js";
 import { openCategorySheet, usageCount, registerAll } from "./categories.js";
-import { categoryIcon } from "./rows.js";
+import { itemIcon } from "./rows.js";
 import { today, price, yen, formatMonth, escapeHtml } from "./utils.js";
 
 const subsTotalEl = document.getElementById("subsTotal");
@@ -56,7 +56,7 @@ function render() {
       ].join(" ・ ");
       return `
         <button type="button" class="cell ${ended ? "is-dim" : ""}" data-sub="${escapeHtml(f.id)}">
-          ${categoryIcon(f.category)}
+          ${itemIcon(f.category, f.icon)}
           <span class="cell-text"><span class="cell-title">${escapeHtml(f.name)}</span><span class="cell-sub">${escapeHtml(sub)}</span></span>
           <span class="cell-value">${price(f.amount, "s")}</span>${CHEVRON}
         </button>`;

@@ -109,6 +109,7 @@ export function monthItems(month) {
         date: `${month}-${String(day).padStart(2, "0")}`,
         time: "",
         store: f.name,
+        icon: f.icon || "",
         amount: changed ? Number(ov.amount) : Number(f.amount),
         baseAmount: Number(f.amount),
         changed,
@@ -204,8 +205,10 @@ export function searchCategories(q) {
 // ===== カテゴリの色 =====
 // 一覧のアイコン・円グラフ・カテゴリ設定で同じ色を使う
 export const PALETTE = [
-  "#0071E3", "#34C759", "#FF9500", "#FF2D55", "#AF52DE",
-  "#5AC8FA", "#FFCC00", "#A2845E", "#5856D6", "#30B0C7"
+  "#0A84FF", "#34C759", "#FF9500", "#FF2D55", "#AF52DE", "#5AC8FA",
+  "#FFCC00", "#A2845E", "#5856D6", "#30B0C7", "#FF6B6B", "#00C7BE",
+  "#FF3B30", "#64D2FF", "#BF5AF2", "#FFD60A", "#32D74B", "#FF9F0A",
+  "#5E5CE6", "#AC8E68", "#E85D9E", "#3A7BD5", "#2EB872", "#F2994A"
 ];
 export const UNCATEGORIZED_COLOR = "#8E8E93";
 
