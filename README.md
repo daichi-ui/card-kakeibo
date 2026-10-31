@@ -10,6 +10,8 @@ Firebase（Cloud Firestore）
 家計簿サイト（GitHub Pages）
 ```
 
+くわしい仕様は [仕様書](docs/specification.md) を参照。
+
 ## 画面
 
 | 画面 | 内容 |
