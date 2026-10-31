@@ -44,7 +44,6 @@ function setMsg(text) {
 
 function renderIcon() {
   pickBtn.innerHTML = pickerHtml(icon);
-  pickBtn.classList.toggle("has-image", !!icon);
 }
 
 // 入力した名前に当てはまるお店を、その場で見せる
@@ -62,7 +61,6 @@ function renderMatches() {
 }
 keywordEl.addEventListener("input", renderMatches);
 
-pickBtn.addEventListener("click", () => fileEl.click());
 fileEl.addEventListener("change", async () => {
   const file = fileEl.files?.[0];
   fileEl.value = "";

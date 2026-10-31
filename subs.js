@@ -35,11 +35,9 @@ let icon = "";
 
 function renderIcon() {
   iconBtn.innerHTML = pickerHtml(icon);
-  iconBtn.classList.toggle("has-image", !!icon);
   iconRemove.hidden = !icon;
 }
 
-iconBtn.addEventListener("click", () => iconFile.click());
 iconFile.addEventListener("change", async () => {
   const file = iconFile.files?.[0];
   iconFile.value = "";
