@@ -831,6 +831,9 @@ button.cell:active { background: #F7F7FA; }
 
 /* ===== 下から出る画面（シート） ===== */
 dialog { max-width: none; max-height: none; padding: 0; border: 0; color: var(--ink); }
+/* 開いたときは画面全体にフォーカスを置く（最初のボタンに枠が付かないように） */
+dialog:focus,
+dialog:focus-visible { outline: none; }
 dialog::backdrop {
   background: rgba(11, 22, 51, .32);
   -webkit-backdrop-filter: blur(3px);

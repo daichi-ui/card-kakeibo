@@ -55,6 +55,14 @@ subscribe(() => {
 });
 
 // ===== 下から出る画面の共通処理 =====
+// 開いたときにブラウザが最初のボタン（キャンセル）にフォーカスして枠が付くので、
+// 画面全体にフォーカスを移す（キーボードの操作はそのまま使える）
+const showModal = HTMLDialogElement.prototype.showModal;
+HTMLDialogElement.prototype.showModal = function () {
+  showModal.call(this);
+  this.focus({ preventScroll: true });
+};
+
 // 「キャンセル」「閉じる」ボタンと、背景のタップで閉じる
 // 下にドラッグしても閉じる。閉じるときは下へすべらせてから閉じる
 function closeSheet(dialog) {
