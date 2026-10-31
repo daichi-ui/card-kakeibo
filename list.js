@@ -5,7 +5,7 @@ import { state, subscribe, monthItems, sum } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
 import { openTxNew } from "./editor.js";
 import {
-  today, addMonth, paymentDateOf, isPaymentShifted, yen, price, formatMonth, formatDayWeek, slashDate, swipe
+  today, addMonth, paymentDateOf, yen, price, formatMonth, formatDayWeek, slashDate, swipe
 } from "./utils.js";
 
 const titleEl = document.getElementById("listMonth");
@@ -66,10 +66,10 @@ function render() {
   const pay = paymentDateOf(month);
 
   summaryEl.innerHTML = `
-    <span class="summary-label">${formatMonth(month)}の合計</span>
+    <span class="summary-label">合計</span>
     <span class="summary-amount">${price(sum(all), "xl")}</span>
     <span class="summary-meta">
-      <span>支払日 <strong>${slashDate(pay)}</strong>${isPaymentShifted(month) ? "（休日のため翌営業日）" : ""}</span>
+      <span>支払日 <strong>${slashDate(pay)}</strong></span>
       <span>${all.filter((i) => !i.excluded).length}件${fixedTotal ? ` ・ うちサブスク ${yen(fixedTotal)}` : ""}</span>
     </span>`;
 

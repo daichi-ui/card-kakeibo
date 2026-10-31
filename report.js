@@ -82,7 +82,7 @@ function render() {
   const prevTotal = mode === "month" ? monthTotal(addMonth(month, -1)) : sum(yearItems(String(Number(year) - 1)));
   const diff = total - prevTotal;
   summaryEl.innerHTML = `
-    <span class="summary-label">${mode === "month" ? formatMonth(month) : `${year}年`}の合計</span>
+    <span class="summary-label">合計</span>
     <span class="summary-amount">${price(total, "xl")}</span>
     <span class="summary-meta">
       <span class="${diff > 0 ? "is-up" : diff < 0 ? "is-down" : ""}">${mode === "month" ? "前月" : "前年"}比 ${signedYen(diff)}</span>

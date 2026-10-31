@@ -3,6 +3,7 @@
 //   transactions   … カードの利用（Gmail から自動・手入力）
 //   fixedCosts     … サブスク（固定費）のひな形
 //   fixedOverrides … サブスクの「この月だけ」の変更（計算から除外・金額変更）
+//   categories     … カテゴリの一覧（カテゴリ設定で登録）
 // どの画面も monthItems() を通してデータを見るので、
 // Gmail・手入力・サブスクの合計はすべての画面で同じになる
 import { db } from "./firebase.js";
@@ -16,6 +17,7 @@ export const state = {
   transactions: [],
   fixedCosts: [],
   fixedOverrides: [],
+  categories: [],
   error: null
 };
 
@@ -33,6 +35,7 @@ export function notify() {
 export const txRef = () => collection(db, "transactions");
 export const fixedRef = () => collection(db, "fixedCosts");
 export const overrideRef = () => collection(db, "fixedOverrides");
+export const categoryRef = () => collection(db, "categories");
 
 // ===== 開始／終了 =====
 export function initStore(user) {
@@ -42,6 +45,14 @@ export function initStore(user) {
     state[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     notify();
   }, (err) => {
+    if (key === "categories") {
+      // カテゴリだけ読めないときは、ほかの画面は使えるようにする
+      state.categoryError = err.code === "permission-denied"
+        ? "カテゴリを読み込めません。Firestore のルールで categories を許可してください。"
+        : "カテゴリの読み込みに失敗しました：" + err.message;
+      notify();
+      return;
+    }
     // ルールで許可されていないアカウントなど
     state.error = err.code === "permission-denied"
       ? "このアカウントではデータを見られません。登録したアカウントでログインし直してください。"
@@ -51,14 +62,15 @@ export function initStore(user) {
   unsubscribes = [
     watch(txRef(), "transactions"),
     watch(fixedRef(), "fixedCosts"),
-    watch(overrideRef(), "fixedOverrides")
+    watch(overrideRef(), "fixedOverrides"),
+    watch(categoryRef(), "categories")
   ];
 }
 
 export function stopStore() {
   unsubscribes.forEach((fn) => fn());
   unsubscribes = [];
-  Object.assign(state, { user: null, transactions: [], fixedCosts: [], fixedOverrides: [], error: null });
+  Object.assign(state, { user: null, transactions: [], fixedCosts: [], fixedOverrides: [], categories: [], error: null, categoryError: null });
   notify();
 }
 
@@ -157,42 +169,34 @@ export function categoryTotals(items) {
   return [...byCat.entries()].sort((a, b) => b[1] - a[1]);
 }
 
-// ===== カテゴリの入力候補 =====
-// 入力したカテゴリをブラウザに保存し、データに含まれるカテゴリと合わせて候補にする
-// （表記揺れを防ぐため、よく使うものほど上に出す）
-const CATEGORY_KEY = "card-kakeibo.categories";
+// ===== カテゴリ =====
 
-function loadSavedCategories() {
-  try {
-    const v = JSON.parse(localStorage.getItem(CATEGORY_KEY) || "{}");
-    return v && typeof v === "object" ? v : {};
-  } catch {
-    return {};
-  }
+// 登録済みのカテゴリ名（並び順どおり）
+export function categoryNames() {
+  return [...state.categories]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name, "ja"))
+    .map((c) => c.name);
 }
 
-export function rememberCategory(name) {
-  const c = normalizeCategory(name);
-  if (c === "未分類") return;
-  try {
-    const saved = loadSavedCategories();
-    saved[c] = (saved[c] || 0) + 1;
-    localStorage.setItem(CATEGORY_KEY, JSON.stringify(saved));
-  } catch {
-    // 保存できない環境（プライベートブラウズなど）でも動くようにする
-  }
-  notify();
+// データで使われているのに、カテゴリ設定に登録されていないもの
+export function unregisteredCategories() {
+  const registered = new Set(categoryNames());
+  const used = new Set();
+  state.transactions.forEach((t) => !t.deleted && t.category && used.add(normalizeCategory(t.category)));
+  state.fixedCosts.forEach((f) => f.category && used.add(normalizeCategory(f.category)));
+  used.delete("未分類");
+  return [...used].filter((c) => !registered.has(c)).sort((a, b) => a.localeCompare(b, "ja"));
 }
 
-export function knownCategories() {
-  const count = new Map(Object.entries(loadSavedCategories()));
-  const add = (c) => {
-    if (!c) return;
-    const n = normalizeCategory(c);
-    count.set(n, (count.get(n) || 0) + 1);
-  };
-  state.transactions.forEach((t) => add(t.category));
-  state.fixedCosts.forEach((f) => add(f.category));
-  count.delete("未分類");
-  return [...[...count.entries()].sort((a, b) => b[1] - a[1]).map(([c]) => c), "未分類"];
+// 部分一致で探す（全角半角・大文字小文字・ひらがなカタカナの違いを無視）
+export function fold(str) {
+  return String(str ?? "").normalize("NFKC").toLowerCase()
+    .replace(/[\u30a1-\u30f6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60))
+    .replace(/\s+/g, "");
+}
+
+export function searchCategories(q) {
+  const key = fold(q);
+  const names = categoryNames();
+  return key ? names.filter((n) => fold(n).includes(key)) : names;
 }
