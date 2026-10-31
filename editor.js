@@ -42,11 +42,15 @@ export function openItem(item) {
 }
 
 // 手入力で追加
-export function openTxNew(date = today()) {
+// prefill：クイック入力から「詳細」で来たときの金額・カテゴリ・お店
+export function openTxNew(date = today(), prefill = {}) {
   editing = null;
   txForm.reset();
   f.title.textContent = "利用を追加";
   f.date.value = date;
+  if (prefill.amount) f.amount.value = prefill.amount;
+  if (prefill.category && prefill.category !== "未分類") f.category.value = prefill.category;
+  if (prefill.store) f.store.value = prefill.store;
   f.note.hidden = true;
   f.del.hidden = true;
   f.excludedRow.hidden = true;

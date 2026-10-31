@@ -5,7 +5,14 @@ import { price, formatDayWeek, escapeHtml, normalizeCategory } from "./utils.js"
 import { openItem, toggleExcluded } from "./editor.js";
 import { state, monthItems, categoryColor } from "./store.js";
 
-// カテゴリの頭文字を色付きの丸に入れる
+// サブスクに画像があれば画像、なければカテゴリの頭文字を色付きの丸に入れる
+export function itemIcon(category, icon, size = "m") {
+  if (icon && icon.startsWith("data:image/")) {
+    return `<img class="cat-icon cat-icon-${size} cat-icon-img" src="${escapeHtml(icon)}" alt="">`;
+  }
+  return categoryIcon(category, size);
+}
+
 export function categoryIcon(category, size = "m") {
   const c = normalizeCategory(category);
   const color = categoryColor(c);
@@ -37,7 +44,7 @@ export function rowHtml(item, { showDate = false } = {}) {
         ${item.excluded ? "戻す" : "除外"}
       </button>
       <button type="button" class="row-main" data-action="open">
-        ${categoryIcon(item.category)}
+        ${itemIcon(item.category, item.icon)}
         <span class="row-text">
           <span class="row-title">${escapeHtml(item.store || "（お店不明）")}</span>
           <span class="row-sub">${badge}${escapeHtml(sub)}</span>

@@ -1,25 +1,20 @@
 // ===== 明細 =====
-//   月の合計と支払日、「リスト」「カレンダー」の切り替え
-//   検索・絞り込みは虫めがねボタンで開く
+//   上：カレンダー（日付をタップでクイック入力）
+//   下：月の合計と支払日、日付ごとの利用一覧（検索・絞り込み・スワイプで除外）
 import { state, subscribe, monthItems, sum, reviewItems } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
-import { calendarHtml } from "./calendar.js";
-import {
-  today, addMonth, paymentDateOf, yen, price, formatMonth, formatDayWeek, slashDate, swipe, holidayName
-} from "./utils.js";
+import { createCalendar } from "./calendar.js";
+import { openQuickAdd } from "./quickadd.js";
+import { animateNumber } from "./motion.js";
+import { today, paymentDateOf, yen, formatMonth, formatDayWeek, slashDate } from "./utils.js";
 
-const titleEl = document.getElementById("listMonth");
 const summaryEl = document.getElementById("listSummary");
-const viewEl = document.getElementById("listView");
 const searchArea = document.getElementById("listSearchArea");
 const searchBtn = document.getElementById("listSearchBtn");
 const searchEl = document.getElementById("listSearch");
 const filterEl = document.getElementById("listFilter");
 const bodyEl = document.getElementById("listBody");
 
-let month = today().slice(0, 7);
-let view = "list";          // "list" | "calendar"
-let selected = today();     // カレンダーで選んでいる日
 let filter = "all";
 
 const FILTERS = {
@@ -30,41 +25,28 @@ const FILTERS = {
   excluded: (i) => i.excluded
 };
 
-subscribe(render);
-bindRows(bodyEl);
-
-function setMonth(m) {
-  month = m;
-  // 今月なら今日、ほかの月は1日を選ぶ
-  selected = today().startsWith(month) ? today() : `${month}-01`;
-  render();
-}
-
-document.getElementById("listPrev").addEventListener("click", () => setMonth(addMonth(month, -1)));
-document.getElementById("listNext").addEventListener("click", () => setMonth(addMonth(month, 1)));
-swipe(summaryEl, (dir) => setMonth(addMonth(month, dir)));
-
-viewEl.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-view]");
-  if (!btn) return;
-  view = btn.dataset.view;
-  render();
+const calendar = createCalendar(document.getElementById("listCalendar"), {
+  onPick: (date) => openQuickAdd(date),
+  onMonth: () => render(true)
 });
+
+subscribe(() => { calendar.refresh(); render(); });
+bindRows(bodyEl);
 
 searchBtn.addEventListener("click", () => {
   const open = searchArea.hidden;
   searchArea.hidden = !open;
   searchBtn.classList.toggle("is-active", open);
+  searchBtn.setAttribute("aria-expanded", String(open));
   if (open) {
     searchEl.focus();
   } else {
     searchEl.value = "";
     setFilter("all");
   }
-  render();
+  render(true);
 });
-// 検索・絞り込みはリスト表示で行う
-searchEl.addEventListener("input", () => { view = "list"; render(); });
+searchEl.addEventListener("input", () => render());
 
 function setFilter(name) {
   filter = name;
@@ -74,15 +56,7 @@ filterEl.addEventListener("click", (e) => {
   const btn = e.target.closest("[data-filter]");
   if (!btn) return;
   setFilter(btn.dataset.filter);
-  view = "list";
-  render();
-});
-
-bodyEl.addEventListener("click", (e) => {
-  const day = e.target.closest("[data-date]");
-  if (!day) return;
-  selected = day.dataset.date;
-  render();
+  render(true);
 });
 
 // ホームから、指定の月（と絞り込み）を開く
@@ -92,36 +66,38 @@ window.addEventListener("open-month", (e) => {
     searchArea.hidden = false;
     searchBtn.classList.add("is-active");
     setFilter(e.detail.filter);
-    view = "list";
   }
-  setMonth(e.detail.month);
+  if (e.detail.month) calendar.setMonth(e.detail.month);
+  render(true);
 });
 
-// ＋ボタンで追加するときの日付（カレンダー表示中は選んだ日）
+// ＋ボタンで追加するときの日付（表示中の月が今月なら今日、ほかは1日）
 export function addDate() {
-  if (view === "calendar") return selected;
-  return today().startsWith(month) ? today() : `${month}-01`;
+  return today().startsWith(calendar.month) ? today() : `${calendar.month}-01`;
 }
 
-function render() {
-  titleEl.textContent = formatMonth(month);
-  viewEl.querySelectorAll("[data-view]").forEach((b) => b.classList.toggle("is-active", b.dataset.view === view));
+let lastTotal = 0;
+
+// animate：月や絞り込みを変えたときは、一覧を下から順に出す
+function render(animate = false) {
   if (!state.user) {
     summaryEl.innerHTML = bodyEl.innerHTML = "";
     return;
   }
-
+  const month = calendar.month;
   const all = monthItems(month);
+  const total = sum(all);
+
   summaryEl.innerHTML = `
-    ${price(sum(all), "xl")}
+    <span class="month-sum-label">${formatMonth(month)}の合計</span>
+    <span class="price price-xl"><span class="price-num" data-count></span><span class="price-yen">円</span></span>
     <span class="month-sum-meta">${slashDate(paymentDateOf(month))} 支払い ・ ${all.filter((i) => !i.excluded).length}件</span>`;
+  animateNumber(summaryEl.querySelector("[data-count]"), lastTotal, total);
+  lastTotal = total;
 
   // 要確認の数を絞り込みボタンに出す
-  const reviewBtn = filterEl.querySelector('[data-filter="review"]');
   const reviews = reviewItems().filter((r) => r.date?.startsWith(month)).length;
-  reviewBtn.textContent = reviews ? `要確認 ${reviews}` : "要確認";
-
-  if (view === "calendar") return renderCalendar(all);
+  filterEl.querySelector('[data-filter="review"]').textContent = reviews ? `要確認 ${reviews}` : "要確認";
 
   const q = searchEl.value.normalize("NFKC").trim().toLowerCase();
   const items = all.filter(FILTERS[filter]).filter((i) => !q ||
@@ -137,23 +113,10 @@ function render() {
   items.forEach((i) => { (byDate[i.date] ||= []).push(i); });
   bodyEl.innerHTML = Object.keys(byDate)
     .sort((a, b) => b.localeCompare(a))
-    .map((date) => `
-      <h3 class="day-title"><span>${formatDayWeek(date)}</span><span>${yen(sum(byDate[date]))}</span></h3>
-      <div class="list">${byDate[date].map((r) => rowHtml(r)).join("")}</div>`)
+    .map((date, n) => `
+      <section class="day-group ${animate ? "stagger" : ""}" style="--n:${Math.min(n, 8)}">
+        <h3 class="day-title"><span>${formatDayWeek(date)}</span><span>${yen(sum(byDate[date]))}</span></h3>
+        <div class="list">${byDate[date].map((r) => rowHtml(r)).join("")}</div>
+      </section>`)
     .join("");
-}
-
-function renderCalendar(all) {
-  const items = all.filter((i) => i.date === selected);
-  const holiday = holidayName(selected);
-  bodyEl.innerHTML = `
-    <div class="card cal-card">${calendarHtml(month, selected)}</div>
-    <h3 class="day-title">
-      <span>${formatDayWeek(selected)}${holiday ? ` ${holiday}` : ""}</span>
-      <span>${items.length ? yen(sum(items)) : ""}</span>
-    </h3>
-    <div class="list">${items.length
-      ? items.map((r) => rowHtml(r)).join("")
-      : `<p class="empty">利用はありません</p>`}</div>`;
-  swipe(bodyEl.querySelector(".cal-card"), (dir) => setMonth(addMonth(month, dir)));
 }

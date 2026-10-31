@@ -4,7 +4,8 @@ import "./home.js";
 import { addDate } from "./list.js";
 import "./report.js";
 import "./settings.js";
-import { openTxNew } from "./editor.js";
+import { openQuickAdd } from "./quickadd.js";
+import { draggableSheet } from "./motion.js";
 import { closeOpenRow } from "./rows.js";
 import {
   GoogleAuthProvider,
@@ -55,25 +56,43 @@ subscribe(() => {
 
 // ===== 下から出る画面の共通処理 =====
 // 「キャンセル」「閉じる」ボタンと、背景のタップで閉じる
+// 下にドラッグしても閉じる。閉じるときは下へすべらせてから閉じる
+function closeSheet(dialog) {
+  if (!dialog.open || dialog.classList.contains("is-closing")) return;
+  dialog.classList.add("is-closing");
+  setTimeout(() => { dialog.close(); dialog.classList.remove("is-closing"); }, 220);
+}
 document.querySelectorAll("dialog").forEach((dialog) => {
   dialog.addEventListener("click", (e) => {
-    if (e.target === dialog || e.target.closest("[data-close]")) dialog.close();
+    if (e.target === dialog || e.target.closest("[data-close]")) closeSheet(dialog);
   });
+  dialog.addEventListener("cancel", (e) => { e.preventDefault(); closeSheet(dialog); });
+  draggableSheet(dialog);
 });
 
 // ===== タブ切り替え =====
 const TABS = ["home", "list", "report", "settings"];
-let current = "home";
+let current = null;
 
 export function showTab(name) {
   if (!TABS.includes(name)) name = "home";
+  const changed = name !== current;
   current = name;
   closeOpenRow();
   document.querySelectorAll(".page").forEach((page) => {
-    page.hidden = page.id !== `tab-${name}`;
+    const show = page.id === `tab-${name}`;
+    page.hidden = !show;
+    // 開いた画面はふわっと出す
+    if (show && changed) {
+      page.classList.remove("page-enter");
+      void page.offsetWidth;
+      page.classList.add("page-enter");
+    }
   });
-  document.querySelectorAll(".tab").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.tab === name);
+  document.querySelectorAll(".tab").forEach((btn, i) => {
+    const on = btn.dataset.tab === name;
+    btn.classList.toggle("active", on);
+    if (on) document.querySelector(".tabbar").style.setProperty("--tab", i);
   });
   const title = document.getElementById(`tab-${name}`).dataset.title;
   pageTitle.textContent = title;
@@ -92,7 +111,7 @@ document.querySelectorAll(".tab").forEach((btn) => {
 window.addEventListener("open-month", (e) => showTab(e.detail.tab));
 
 // ===== ＋ボタン（手入力で追加） =====
-fab.addEventListener("click", () => openTxNew(current === "list" ? addDate() : undefined));
+fab.addEventListener("click", () => openQuickAdd(current === "list" ? addDate() : undefined));
 
 // ===== ヘッダー =====
 // 大きな画面名の上に今日の日付。スクロールすると上のバーに小さな画面名が出る
