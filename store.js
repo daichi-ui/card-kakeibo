@@ -200,3 +200,25 @@ export function searchCategories(q) {
   const names = categoryNames();
   return key ? names.filter((n) => fold(n).includes(key)) : names;
 }
+
+// ===== カテゴリの色 =====
+// 一覧のアイコン・円グラフ・カテゴリ設定で同じ色を使う
+export const PALETTE = [
+  "#0071E3", "#34C759", "#FF9500", "#FF2D55", "#AF52DE",
+  "#5AC8FA", "#FFCC00", "#A2845E", "#5856D6", "#30B0C7"
+];
+export const UNCATEGORIZED_COLOR = "#8E8E93";
+
+export function categoryColor(name) {
+  const n = normalizeCategory(name);
+  if (n === "未分類") return UNCATEGORIZED_COLOR;
+  const c = state.categories.find((x) => x.name === n);
+  if (c?.color) return c.color;
+  // 登録済みで色がないものは、並び順で違う色を割り当てる
+  const i = categoryNames().indexOf(n);
+  if (i >= 0) return PALETTE.at(i % PALETTE.length);
+  // 未登録のカテゴリは、名前から毎回同じ色を選ぶ
+  let h = 0;
+  for (const ch of n) h = (h * 31 + ch.codePointAt(0)) >>> 0;
+  return PALETTE.at(h % PALETTE.length);
+}

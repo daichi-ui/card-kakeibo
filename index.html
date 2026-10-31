@@ -35,14 +35,8 @@
       <span id="barTitle" class="bar-title" aria-hidden="true">ホーム</span>
     </header>
     <div class="large-title">
-      <div>
-        <span id="todayLabel" class="large-title-date"></span>
-        <h1 id="pageTitle" class="large-title-text">ホーム</h1>
-      </div>
-      <button id="accountBtn" class="avatar" aria-label="アカウント">
-        <img id="avatarImg" alt="" hidden referrerpolicy="no-referrer">
-        <span id="avatarText"></span>
-      </button>
+      <span id="todayLabel" class="large-title-date"></span>
+      <h1 id="pageTitle" class="large-title-text">ホーム</h1>
     </div>
 
     <main class="main">
@@ -51,58 +45,14 @@
 
       <!-- ===== ホーム ===== -->
       <section id="tab-home" class="page" data-title="ホーム">
+        <div id="reviewArea"></div>
         <div id="payCard"></div>
         <div id="statGrid" class="stat-grid"></div>
-
-        <div id="reviewArea"></div>
       </section>
 
-      <!-- ===== カレンダー ===== -->
-      <section id="tab-calendar" class="page" data-title="カレンダー" hidden>
-        <div class="month-nav">
-          <button id="calPrev" class="icon-button" aria-label="前の月">
-            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
-          </button>
-          <h2 id="calMonth" class="month-title"></h2>
-          <button id="calNext" class="icon-button" aria-label="次の月">
-            <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-          </button>
-          <button id="calToday" class="pill-button" hidden>今月に戻る</button>
-        </div>
-        <div class="card cal-card">
-          <div id="calGrid" class="cal-grid"></div>
-        </div>
-
-        <div id="calSummary" class="card summary"></div>
-
-        <h2 class="section-title">利用履歴</h2>
-        <div id="calHistory" class="list"></div>
-      </section>
-
-      <!-- ===== サブスク ===== -->
-      <section id="tab-subs" class="page" data-title="サブスク" hidden>
-        <div class="month-nav">
-          <button id="subsPrev" class="icon-button" aria-label="前の月">
-            <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
-          </button>
-          <h2 id="subsMonth" class="month-title"></h2>
-          <button id="subsNext" class="icon-button" aria-label="次の月">
-            <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
-          </button>
-        </div>
-        <div id="subsSummary" class="card summary"></div>
-
-        <h2 class="section-title">この月</h2>
-        <div id="subsMonthList" class="list"></div>
-
-        <h2 class="section-title">登録中</h2>
-        <div id="subsAllList" class="list"></div>
-        <button id="subsAddBtn" class="btn btn-tinted btn-block">サブスクを追加</button>
-      </section>
-
-      <!-- ===== 明細 ===== -->
+      <!-- ===== 明細（リスト／カレンダー） ===== -->
       <section id="tab-list" class="page" data-title="明細" hidden>
-        <div class="month-nav">
+        <div class="toolbar">
           <button id="listPrev" class="icon-button" aria-label="前の月">
             <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
           </button>
@@ -110,24 +60,33 @@
           <button id="listNext" class="icon-button" aria-label="次の月">
             <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
           </button>
+          <button id="listSearchBtn" class="icon-button toolbar-end" aria-label="検索と絞り込み">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+          </button>
         </div>
-        <div id="listSummary" class="card summary"></div>
 
-        <div class="search">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
-          <input type="search" id="listSearch" placeholder="検索" aria-label="検索">
+        <div id="listSummary" class="month-sum"></div>
+
+        <div id="listView" class="segmented" role="group" aria-label="表示">
+          <button type="button" data-view="list" class="is-active">リスト</button>
+          <button type="button" data-view="calendar">カレンダー</button>
         </div>
-        <div id="listFilter" class="chips-scroll" role="group" aria-label="絞り込み">
-          <button type="button" class="chip is-active" data-filter="all">すべて</button>
-          <button type="button" class="chip" data-filter="mail">Gmail</button>
-          <button type="button" class="chip" data-filter="manual">手入力</button>
-          <button type="button" class="chip" data-filter="fixed">サブスク</button>
-          <button type="button" class="chip" data-filter="review">要確認</button>
-          <button type="button" class="chip" data-filter="excluded">除外中</button>
+
+        <div id="listSearchArea" hidden>
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg>
+            <input type="search" id="listSearch" placeholder="検索" aria-label="検索">
+          </div>
+          <div id="listFilter" class="chips-scroll" role="group" aria-label="絞り込み">
+            <button type="button" class="chip is-active" data-filter="all">すべて</button>
+            <button type="button" class="chip" data-filter="review">要確認</button>
+            <button type="button" class="chip" data-filter="fixed">サブスク</button>
+            <button type="button" class="chip" data-filter="manual">手入力</button>
+            <button type="button" class="chip" data-filter="excluded">除外中</button>
+          </div>
         </div>
 
         <div id="listBody"></div>
-        <button id="listAddBtn" class="btn btn-tinted btn-block list-add">この月に手入力で追加</button>
       </section>
 
       <!-- ===== レポート ===== -->
@@ -138,7 +97,7 @@
         </div>
 
         <div id="reportPager">
-          <div class="month-nav">
+          <div class="toolbar">
             <button id="reportPrev" class="icon-button" aria-label="前へ">
               <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
             </button>
@@ -149,7 +108,7 @@
           </div>
           <div id="reportSummary" class="card summary"></div>
 
-          <h2 class="section-title">カテゴリ別の内訳</h2>
+          <h2 class="section-title">カテゴリ別</h2>
           <div class="card pie-card">
             <div id="reportPie"></div>
             <div id="reportLegend" class="legend"></div>
@@ -161,21 +120,50 @@
           <div id="reportBar"></div>
         </div>
       </section>
+
+      <!-- ===== 設定 ===== -->
+      <section id="tab-settings" class="page" data-title="設定" hidden>
+        <h2 class="section-title"><span>サブスク</span><span id="subsTotal" class="section-aside"></span></h2>
+        <div class="cells">
+          <div id="subsList"></div>
+          <button type="button" id="subsAdd" class="cell cell-add">
+            <span class="add-icon">＋</span><span class="cell-text"><span class="cell-title">サブスクを追加</span></span>
+          </button>
+        </div>
+
+        <h2 class="section-title">カテゴリ</h2>
+        <p id="catError" class="banner-error" hidden></p>
+        <div class="cells">
+          <div id="catList"></div>
+          <button type="button" id="catAdd" class="cell cell-add">
+            <span class="add-icon">＋</span><span class="cell-text"><span class="cell-title">カテゴリを追加</span></span>
+          </button>
+        </div>
+        <div id="catUnregistered" class="chips" hidden></div>
+
+        <h2 class="section-title">アカウント</h2>
+        <div class="cells">
+          <div class="cell cell-static">
+            <span class="cell-text"><span class="cell-title">ログイン中</span></span>
+            <span id="accountEmail" class="cell-value cell-quiet"></span>
+          </div>
+          <button type="button" id="logoutBtn" class="cell cell-danger">
+            <span class="cell-text"><span class="cell-title">ログアウト</span></span>
+          </button>
+        </div>
+      </section>
     </main>
+
+    <!-- 手入力で追加 -->
+    <button id="fab" class="fab" aria-label="手入力で追加">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
 
     <!-- 下部タブ -->
     <nav class="tabbar">
       <button class="tab active" data-tab="home">
         <svg viewBox="0 0 24 24"><path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
         <span>ホーム</span>
-      </button>
-      <button class="tab" data-tab="calendar">
-        <svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>
-        <span>カレンダー</span>
-      </button>
-      <button class="tab" data-tab="subs">
-        <svg viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v4h-4"/></svg>
-        <span>サブスク</span>
       </button>
       <button class="tab" data-tab="list">
         <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
@@ -185,23 +173,12 @@
         <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>
         <span>レポート</span>
       </button>
+      <button class="tab" data-tab="settings">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        <span>設定</span>
+      </button>
     </nav>
   </div>
-
-  <!-- ===== アカウントのメニュー ===== -->
-  <dialog id="accountSheet" class="action-sheet">
-    <div class="action-group">
-      <div class="action-header">
-        <span class="action-header-title">ログイン中のアカウント</span>
-        <span id="accountEmail" class="action-header-sub"></span>
-      </div>
-      <button type="button" id="openCategoryBtn" class="action-button">カテゴリ設定</button>
-      <button type="button" id="logoutBtn" class="action-button action-danger">ログアウト</button>
-    </div>
-    <div class="action-group">
-      <button type="button" id="accountCancel" class="action-button action-bold">キャンセル</button>
-    </div>
-  </dialog>
 
   <!-- ===== 利用の入力・編集 ===== -->
   <dialog id="txSheet" class="sheet">
@@ -214,23 +191,12 @@
 
       <p id="txSourceNote" class="sheet-note" hidden></p>
 
+      <label class="amount-input">
+        <input type="number" id="txAmount" step="1" inputmode="numeric" placeholder="0" required aria-label="金額">
+        <span>円</span>
+      </label>
+
       <div class="group">
-        <label class="field">
-          <span class="field-label">日付</span>
-          <input type="date" id="txDate" required>
-        </label>
-        <label class="field">
-          <span class="field-label">時刻</span>
-          <input type="time" id="txTime">
-        </label>
-        <label class="field">
-          <span class="field-label">お店</span>
-          <input type="text" id="txStore" maxlength="100" placeholder="例：コンビニ">
-        </label>
-        <label class="field">
-          <span class="field-label">金額（円）</span>
-          <input type="number" id="txAmount" step="1" inputmode="numeric" placeholder="0" required>
-        </label>
         <div class="combo">
           <label class="field">
             <span class="field-label">カテゴリ</span>
@@ -239,6 +205,18 @@
           </label>
           <div class="combo-list" role="listbox"></div>
         </div>
+        <label class="field">
+          <span class="field-label">お店</span>
+          <input type="text" id="txStore" maxlength="100" placeholder="任意">
+        </label>
+        <label class="field">
+          <span class="field-label">日付</span>
+          <input type="date" id="txDate" required>
+        </label>
+        <label class="field">
+          <span class="field-label">時刻</span>
+          <input type="time" id="txTime">
+        </label>
         <label class="field">
           <span class="field-label">メモ</span>
           <input type="text" id="txMemo" maxlength="100" placeholder="任意">
@@ -259,40 +237,6 @@
     </form>
   </dialog>
 
-  <!-- ===== カレンダー：その日の支出 ===== -->
-  <dialog id="daySheet" class="sheet">
-    <form id="dayForm">
-      <div class="sheet-bar">
-        <button type="button" class="nav-link" data-close>閉じる</button>
-        <h2 id="dayTitle" class="sheet-title"></h2>
-        <button type="submit" class="nav-link nav-link-bold">追加</button>
-      </div>
-
-      <div class="group">
-        <label class="field">
-          <span class="field-label">金額（円）</span>
-          <input type="number" id="dayAmount" step="1" inputmode="numeric" placeholder="0" required>
-        </label>
-        <label class="field">
-          <span class="field-label">お店</span>
-          <input type="text" id="dayStore" maxlength="100" placeholder="任意">
-        </label>
-        <div class="combo">
-          <label class="field">
-            <span class="field-label">カテゴリ</span>
-            <input type="text" id="dayCategory" maxlength="30" placeholder="未分類" autocomplete="off" role="combobox" aria-autocomplete="list">
-            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
-          </label>
-          <div class="combo-list" role="listbox"></div>
-        </div>
-      </div>
-      <p id="dayMsg" class="msg"></p>
-
-      <h3 class="section-title"><span>この日の利用</span><span id="dayTotal"></span></h3>
-      <div id="dayList" class="list"></div>
-    </form>
-  </dialog>
-
   <!-- ===== サブスク（この月の分） ===== -->
   <dialog id="fixedItemSheet" class="sheet">
     <form id="fixedItemForm">
@@ -304,20 +248,21 @@
 
       <p id="fixedItemNote" class="sheet-note"></p>
 
+      <label class="amount-input">
+        <input type="number" id="fixedItemAmount" min="0" step="1" inputmode="numeric" required aria-label="今月の金額">
+        <span>円</span>
+      </label>
+
       <div class="group">
-        <label class="field">
-          <span class="field-label">今月の金額（円）</span>
-          <input type="number" id="fixedItemAmount" min="0" step="1" inputmode="numeric" required>
-        </label>
         <label class="field field-switch">
-          <span class="field-label">計算から除外</span>
+          <span class="field-label">今月は計算から除外</span>
           <input type="checkbox" id="fixedItemExcluded" class="switch" role="switch">
         </label>
       </div>
 
       <div class="group group-gap">
         <button type="button" id="fixedItemReset" class="row-button" hidden>通常の金額に戻す</button>
-        <button type="button" id="fixedItemEdit" class="row-button">サブスクを編集</button>
+        <button type="button" id="fixedItemEdit" class="row-button">サブスクの設定を開く</button>
       </div>
     </form>
   </dialog>
@@ -331,18 +276,15 @@
         <button type="submit" class="nav-link nav-link-bold">保存</button>
       </div>
 
+      <label class="amount-input">
+        <input type="number" id="subAmount" min="0" step="1" inputmode="numeric" placeholder="0" required aria-label="金額">
+        <span>円</span>
+      </label>
+
       <div class="group">
         <label class="field">
           <span class="field-label">名前</span>
           <input type="text" id="subName" maxlength="50" placeholder="例：携帯料金" required>
-        </label>
-        <label class="field">
-          <span class="field-label">金額（円）</span>
-          <input type="number" id="subAmount" min="0" step="1" inputmode="numeric" placeholder="1000" required>
-        </label>
-        <label class="field">
-          <span class="field-label">引き落とし日</span>
-          <select id="subDay"></select>
         </label>
         <div class="combo">
           <label class="field">
@@ -352,6 +294,10 @@
           </label>
           <div class="combo-list" role="listbox"></div>
         </div>
+        <label class="field">
+          <span class="field-label">引き落とし日</span>
+          <select id="subDay"></select>
+        </label>
         <label class="field">
           <span class="field-label">開始月</span>
           <input type="month" id="subStart" required>
@@ -369,26 +315,31 @@
     </form>
   </dialog>
 
-
-  <!-- ===== カテゴリ設定 ===== -->
+  <!-- ===== カテゴリの追加・編集 ===== -->
   <dialog id="categorySheet" class="sheet">
-    <div class="sheet-bar">
-      <span></span>
-      <h2 class="sheet-title">カテゴリ設定</h2>
-      <button type="button" class="nav-link nav-link-bold" data-close>完了</button>
-    </div>
+    <form id="categoryForm">
+      <div class="sheet-bar">
+        <button type="button" class="nav-link" data-close>キャンセル</button>
+        <h2 id="categoryTitle" class="sheet-title">カテゴリを追加</h2>
+        <button type="submit" class="nav-link nav-link-bold">保存</button>
+      </div>
 
-    <form id="categoryForm" class="inline-form">
-      <input type="text" id="categoryName" maxlength="30" placeholder="カテゴリ名" autocomplete="off" required>
-      <button type="button" id="categoryCancel" class="nav-link" hidden>やめる</button>
-      <button type="submit" id="categorySubmit" class="btn btn-primary btn-small">追加</button>
+      <div class="group">
+        <label class="field">
+          <span class="field-label">名前</span>
+          <input type="text" id="categoryName" maxlength="30" placeholder="例：食費" autocomplete="off" required>
+        </label>
+      </div>
+
+      <h3 class="section-title section-title-s">色</h3>
+      <div id="categorySwatches" class="swatches"></div>
+
+      <p id="categoryNote" class="sheet-note" hidden></p>
+      <div class="group group-gap">
+        <button type="button" id="categoryDelete" class="row-button row-danger" hidden>このカテゴリを削除</button>
+      </div>
+      <p id="categoryMsg" class="msg"></p>
     </form>
-    <p id="categoryMsg" class="msg"></p>
-
-    <div id="categoryList" class="list"></div>
-
-    <h3 id="categoryUnregisteredTitle" class="section-title" hidden>未登録</h3>
-    <div id="categoryUnregistered" class="chips" hidden></div>
   </dialog>
 
   <script type="module" src="app.js"></script>

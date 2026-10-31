@@ -1,80 +1,13 @@
-// ===== サブスク =====
-//   上：表示中の月に反映されるサブスク（タップで今月だけ金額変更、丸ボタンで計算から除外）
-//   下：登録中のサブスク（ひな形）の追加・編集・削除
+// ===== サブスクの追加・編集（設定タブから開く） =====
 // 登録したサブスクは、開始月〜終了月のすべての月の明細に自動で入る
 import {
   doc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { state, subscribe, fixedRef, monthItems, sum, isActiveIn } from "./store.js";
-import { rowHtml, bindRows } from "./rows.js";
+import { state, fixedRef } from "./store.js";
 import { attachCategoryInput, ensureCategory } from "./categories.js";
-import { today, addMonth, price, formatMonth, escapeHtml, normalizeCategory } from "./utils.js";
+import { today, normalizeCategory } from "./utils.js";
 
-const monthEl = document.getElementById("subsMonth");
-const summaryEl = document.getElementById("subsSummary");
-const monthListEl = document.getElementById("subsMonthList");
-const allListEl = document.getElementById("subsAllList");
-
-let month = today().slice(0, 7);
-
-subscribe(render);
-bindRows(monthListEl);
-
-document.getElementById("subsPrev").addEventListener("click", () => { month = addMonth(month, -1); render(); });
-document.getElementById("subsNext").addEventListener("click", () => { month = addMonth(month, 1); render(); });
-document.getElementById("subsAddBtn").addEventListener("click", () => openSubSheet());
 window.addEventListener("edit-subscription", (e) => openSubSheet(e.detail));
-window.addEventListener("open-month", (e) => {
-  if (e.detail.tab !== "subs") return;
-  month = e.detail.month;
-  render();
-});
-
-function render() {
-  monthEl.textContent = formatMonth(month);
-  if (!state.user) {
-    summaryEl.innerHTML = monthListEl.innerHTML = allListEl.innerHTML = "";
-    return;
-  }
-
-  const items = monthItems(month).filter((i) => i.type === "fixed")
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const excluded = items.filter((i) => i.excluded).length;
-
-  summaryEl.innerHTML = `
-    <span class="summary-label">サブスク合計</span>
-    <span class="summary-amount">${price(sum(items), "xl")}</span>
-    <span class="summary-meta">${items.length}件${excluded ? ` ・ 除外 ${excluded}件` : ""}</span>`;
-
-  monthListEl.innerHTML = items.length
-    ? items.map((i) => rowHtml(i, { showDate: true, toggle: true })).join("")
-    : `<p class="empty">この月のサブスクはありません</p>`;
-
-  const t = today().slice(0, 7);
-  allListEl.innerHTML = state.fixedCosts.length
-    ? [...state.fixedCosts]
-      .sort((a, b) => (a.day - b.day) || a.name.localeCompare(b.name))
-      .map((fc) => {
-        const ended = fc.endMonth && fc.endMonth < t;
-        const period = `${fc.startMonth ? formatMonth(fc.startMonth) : ""}〜${fc.endMonth ? formatMonth(fc.endMonth) : ""}`;
-        return `
-          <div class="row ${ended || !isActiveIn(fc, t) ? "is-dim" : ""}">
-            <button type="button" class="row-main" data-edit="${escapeHtml(fc.id)}">
-              <span class="row-head">
-                <span class="row-title">${escapeHtml(fc.name)}</span>
-                <span class="row-amount">${price(fc.amount, "m")}</span>
-              </span>
-              <span class="row-sub"><span>${fc.day === 31 ? "月末" : `毎月${fc.day}日`} ・ ${escapeHtml(fc.category || "未分類")} ・ ${period}${ended ? "（終了）" : ""}</span></span>
-            </button>
-          </div>`;
-      }).join("")
-    : `<p class="empty">まだ登録されていません</p>`;
-}
-
-allListEl.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-edit]");
-  if (btn) openSubSheet(btn.dataset.edit);
-});
 
 // ===== 追加・編集の画面 =====
 const sheet = document.getElementById("subSheet");
@@ -98,7 +31,7 @@ for (let d = 1; d <= 31; d++) {
   el.day.add(new Option(d === 31 ? "月末" : `毎月${d}日`, String(d)));
 }
 
-function openSubSheet(id = null) {
+export function openSubSheet(id = null) {
   form.reset();
   el.msg.textContent = "";
   const fc = id && state.fixedCosts.find((x) => x.id === id);
