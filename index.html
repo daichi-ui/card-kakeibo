@@ -125,6 +125,15 @@
           </button>
         </div>
 
+        <h2 class="section-title">お店のアイコン</h2>
+        <p id="storeIconError" class="banner-error" hidden></p>
+        <div class="cells">
+          <div id="storeIconList"></div>
+          <button type="button" id="storeIconAdd" class="cell cell-add">
+            <span class="add-icon">＋</span><span class="cell-text"><span class="cell-title">お店のアイコンを追加</span></span>
+          </button>
+        </div>
+
         <h2 class="section-title">カテゴリ</h2>
         <p id="catError" class="banner-error" hidden></p>
         <div class="cells">
@@ -226,6 +235,7 @@
       </div>
 
       <div class="group group-gap">
+        <button type="button" id="txStoreIcon" class="row-button" hidden>このお店のアイコンを設定</button>
         <button type="button" id="txDelete" class="row-button row-danger" hidden>この利用を削除</button>
       </div>
       <p id="txMsg" class="msg"></p>
@@ -343,6 +353,36 @@
         <button type="button" id="categoryDelete" class="row-button row-danger" hidden>このカテゴリを削除</button>
       </div>
       <p id="categoryMsg" class="msg"></p>
+    </form>
+  </dialog>
+
+  <!-- ===== お店のアイコンの追加・編集 ===== -->
+  <dialog id="storeIconSheet" tabindex="-1" class="sheet">
+    <form id="storeIconForm">
+      <div class="sheet-bar">
+        <button type="button" class="nav-link" data-close>キャンセル</button>
+        <h2 id="storeIconTitle" class="sheet-title">お店のアイコンを追加</h2>
+        <button type="submit" class="nav-link nav-link-bold">保存</button>
+      </div>
+
+      <div class="store-icon-pick">
+        <button type="button" id="storeIconBtn" class="icon-picker-btn icon-picker-l" aria-label="画像を選ぶ"></button>
+        <input type="file" id="storeIconFile" accept="image/*" hidden>
+      </div>
+
+      <div class="group">
+        <label class="field">
+          <span class="field-label">お店の名前</span>
+          <input type="text" id="storeIconKeyword" maxlength="50" placeholder="例：セブン" autocomplete="off" required>
+        </label>
+      </div>
+      <p class="group-note">名前の一部で大丈夫です。全角と半角、記号の違いは気にしなくて大丈夫です。</p>
+      <div id="storeIconMatches" class="matches"></div>
+
+      <div class="group group-gap">
+        <button type="button" id="storeIconDelete" class="row-button row-danger" hidden>このアイコンを削除</button>
+      </div>
+      <p id="storeIconMsg" class="msg"></p>
     </form>
   </dialog>
 
