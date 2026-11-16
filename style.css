@@ -1069,8 +1069,8 @@ dialog::backdrop {
   padding: 0 16px;
 }
 .field + .field::before,
-.combo + .field::before,
-.field + .combo::before,
+.catpick + .field::before,
+.field + .catpick::before,
 .row-button + .row-button::before {
   content: "";
   position: absolute;
@@ -1251,46 +1251,31 @@ dialog::backdrop {
 .match-chip { padding: 4px 10px; border-radius: 999px; background: var(--surface); box-shadow: var(--lift); font-size: 13px; }
 .match-more { padding: 4px 4px; color: var(--muted); font-size: 13px; }
 
-/* カテゴリのプルダウン：入力欄のすぐ下に開き、入力中の文字を隠さない */
-.combo { position: relative; scroll-margin-top: 72px; }
-/* 開いている間はリストをグループの外に重ねて出す（シートの高さを変えない＝画面が跳ねない） */
-.group:has(> .combo.is-open) { overflow: visible; }
-.combo.is-open { z-index: 2; }
-.group > .combo:first-child .field { border-radius: var(--r-m) var(--r-m) 0 0; }
-.group > .combo:last-child:not(.is-open) .field { border-radius: 0 0 var(--r-m) var(--r-m); }
-.combo-arrow { flex: none; width: 16px; height: 16px; margin-right: -4px; color: var(--muted); transition: transform .25s var(--spring); }
-.combo.is-open .combo-arrow { transform: rotate(180deg); color: var(--blue); }
-.combo.is-open .field { background: rgba(10, 132, 255, .04); }
-.combo-list {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  max-height: 232px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-top: 1px solid var(--line);
-  border-radius: 0 0 var(--r-m) var(--r-m);
-  background: var(--paper);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
-}
-.combo.is-open .combo-list { display: block; animation: drop .25s var(--ease); }
-.combo-option {
-  display: flex;
+/* カテゴリの選択：登録済みのカテゴリをボタンで並べる */
+.catpick { position: relative; padding: 12px 16px 14px; }
+.catpick .field-label { display: block; margin-bottom: 10px; }
+.catpick-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.catpick .q-cat { padding: 8px 13px; }
+.catpick-add { color: var(--blue); box-shadow: inset 0 0 0 1.5px var(--blue-soft); }
+.catpick-new {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 16px 12px 24px;
-  text-align: left;
-  font-size: 16px;
+  gap: 4px;
+  padding: 2px 4px 2px 12px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1.5px var(--blue);
 }
-.combo-option + .combo-option { border-top: 1px solid var(--line); }
-.combo-option mark { background: none; color: var(--blue); font-weight: 700; }
-.combo-option:active,
-.combo-option.is-active { background: var(--blue-soft); }
-.combo-option.is-selected { color: var(--blue); font-weight: 600; }
-.combo-empty { margin: 0; padding: 14px 16px 14px 24px; color: var(--muted); font-size: 14px; }
+.catpick-new input {
+  width: 9em;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+}
+.catpick-new button { padding: 6px 10px; color: var(--blue); font-size: 14px; font-weight: 700; }
 
 /* 色の選択（24色） */
 .swatches {

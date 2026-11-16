@@ -16,97 +16,75 @@ export async function ensureCategory(name) {
   await addDoc(categoryRef(), { name: c, color: categoryColor(c), order: Date.now(), createdAt: serverTimestamp() });
 }
 
-// ===== プルダウン付きの入力欄 =====
-// <div class="combo"> の中の input に付ける。リストは入力欄のすぐ下に重ねて開く（シートの高さは変わらない）
-// 開いたときはすべてのカテゴリを出し（今のカテゴリに印）、文字を打ち始めたら絞り込む
+// ===== カテゴリの選び方（利用・サブスク・お店のアイコンの入力画面） =====
+// 登録済みのカテゴリを色付きのボタンで全部並べ、タップで選ぶ（キーボードは出さない）
+// 新しいカテゴリは「＋ 新しいカテゴリ」を押したときだけ入力欄を出す
+// 選んだ値は <input type="hidden"> に入れる（空＝未分類／設定しない）
+// 戻り値：入力画面を開くときに呼ぶ関数（hidden の値に合わせて描き直す）
 export function attachCategoryInput(input) {
-  const combo = input.closest(".combo");
-  const list = combo.querySelector(".combo-list");
-  let active = -1;
-  let filtering = false; // 開いてから文字を打ったか
-  let closeTimer = null;
+  const box = input.closest(".catpick");
+  const chips = box.querySelector(".catpick-chips");
+  const emptyLabel = box.dataset.empty || "未分類";
+  let adding = false;
 
-  const items = () => [...list.querySelectorAll(".combo-option")];
-  const isOpen = () => combo.classList.contains("is-open");
+  const chip = (value, label, color, selected) => `
+    <button type="button" class="q-cat ${selected ? "is-selected" : ""}" role="radio" aria-checked="${selected}"
+            data-value="${escapeHtml(value)}" style="--c:${color}"><span class="dot"></span>${escapeHtml(label)}</button>`;
 
   function render() {
-    const q = input.value;
-    const names = searchCategories(filtering ? q : "");
-    const key = filtering ? fold(q) : "";
-    active = -1;
-    list.innerHTML = names.length
-      ? names.map((n) => {
-          // 一致した部分を太字にする
-          const i = key ? fold(n).indexOf(key) : -1;
-          const label = i >= 0 && fold(n).length === n.length
-            ? `${escapeHtml(n.slice(0, i))}<mark>${escapeHtml(n.slice(i, i + key.length))}</mark>${escapeHtml(n.slice(i + key.length))}`
-            : escapeHtml(n);
-          const selected = normalizeCategory(q) === n;
-          return `<button type="button" class="combo-option ${selected ? "is-selected" : ""}" role="option" data-value="${escapeHtml(n)}"><span class="dot" style="--c:${categoryColor(n)}"></span>${label}</button>`;
-        }).join("")
-      : `<p class="combo-empty">${key ? "新しいカテゴリとして追加されます" : "カテゴリがありません"}</p>`;
+    const cur = normalizeCategory(input.value);
+    const current = cur === "未分類" ? "" : cur;
+    const names = categoryNames();
+    // 未登録のカテゴリが入っているときも選んだ状態で見せる
+    if (current && !names.includes(current)) names.push(current);
+    chips.innerHTML = [
+      chip("", emptyLabel, categoryColor("未分類"), !current),
+      ...names.map((n) => chip(n, n, categoryColor(n), n === current))
+    ].join("") + (adding
+      ? `<span class="catpick-new">
+           <input type="text" maxlength="30" placeholder="カテゴリ名" enterkeyhint="done" aria-label="新しいカテゴリ名">
+           <button type="button" data-add-ok>追加</button>
+         </span>`
+      : `<button type="button" class="q-cat catpick-add" data-add>＋ 新しいカテゴリ</button>`);
   }
 
-  function open() {
-    clearTimeout(closeTimer);
-    if (isOpen()) return;
-    filtering = false;
+  function addNew() {
+    const el = chips.querySelector(".catpick-new input");
+    const v = normalizeCategory(el?.value);
+    if (v !== "未分類") input.value = v;
+    adding = false;
     render();
-    combo.classList.add("is-open");
-    // 今のカテゴリをリストの中で見える位置に出し、リストが隠れていればシートを少し送る
-    const sel = list.querySelector(".is-selected");
-    list.scrollTop = sel ? sel.offsetTop - list.clientHeight / 2 + sel.offsetHeight / 2 : 0;
-    requestAnimationFrame(() => list.scrollIntoView({ block: "nearest", behavior: "smooth" }));
   }
 
-  function close() {
-    clearTimeout(closeTimer);
-    combo.classList.remove("is-open");
-  }
-
-  function choose(value) {
-    input.value = value;
-    close();
-    // スマホではキーボードも閉じる（もう一度タップすればまた開く）
-    input.blur();
-  }
-
-  input.addEventListener("focus", open);
-  // すでにフォーカスがあるとき（選んだ直後など）にタップしても開く
-  input.addEventListener("click", open);
-  input.addEventListener("input", () => {
-    open();
-    filtering = true;
-    render();
-  });
-  input.addEventListener("blur", () => {
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(close, 120);
-  });
-  input.addEventListener("keydown", (e) => {
-    const opts = items();
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      if (!opts.length) return;
-      active = (active + (e.key === "ArrowDown" ? 1 : -1) + opts.length) % opts.length;
-      opts.forEach((o, i) => o.classList.toggle("is-active", i === active));
-      opts[active].scrollIntoView({ block: "nearest" });
-    } else if (e.key === "Enter" && active >= 0) {
-      e.preventDefault();
-      choose(opts[active].dataset.value);
-    } else if (e.key === "Escape") {
-      close();
+  chips.addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.hasAttribute("data-add")) {
+      adding = true;
+      render();
+      chips.querySelector(".catpick-new input").focus();
+    } else if (b.hasAttribute("data-add-ok")) {
+      addNew();
+    } else if (b.dataset.value !== undefined) {
+      input.value = b.dataset.value;
+      render();
     }
   });
-  // リストを押しても入力欄のフォーカスを外さない
-  list.addEventListener("pointerdown", (e) => e.preventDefault());
-  list.addEventListener("click", (e) => {
-    const opt = e.target.closest("[data-value]");
-    if (opt) choose(opt.dataset.value);
+  chips.addEventListener("keydown", (e) => {
+    if (!e.target.closest(".catpick-new")) return;
+    if (e.key === "Enter") { e.preventDefault(); addNew(); }
+    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); adding = false; render(); }
+  });
+  // 何も入れずに入力欄から離れたら、元のボタンに戻す
+  chips.addEventListener("focusout", (e) => {
+    const el = e.target.closest(".catpick-new input");
+    if (el && !el.value.trim() && !chips.contains(e.relatedTarget)) {
+      setTimeout(() => { if (adding && !el.value.trim()) { adding = false; render(); } }, 150);
+    }
   });
 
-  subscribe(() => combo.classList.contains("is-open") && render());
-  return close;
+  subscribe(() => { if (!adding) render(); });
+  return () => { adding = false; render(); };
 }
 
 // ===== カテゴリの追加・編集（設定タブから開く） =====
