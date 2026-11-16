@@ -31,7 +31,8 @@ export function rowHtml(item, { showDate = false } = {}) {
   const sub = [
     showDate ? formatDayWeek(item.date) : item.time,
     normalizeCategory(item.category),
-    type === "fixed" ? "サブスク" : ""
+    // サブスクの印（カテゴリ名も「サブスク」なら重ねて出さない）
+    type === "fixed" && normalizeCategory(item.category) !== "サブスク" ? "サブスク" : ""
   ].filter(Boolean).join(" ・ ");
 
   // バッジは注意が必要なものだけ

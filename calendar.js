@@ -8,7 +8,8 @@ import {
 
 // 桁が多いときは文字を小さくする
 function cellYen(v) {
-  const text = v.toLocaleString("ja-JP");
+  // マイナス（返金）は他の画面と同じ「−」で表示する
+  const text = (v < 0 ? "−" : "") + Math.abs(v).toLocaleString("ja-JP");
   return `<span class="${text.length >= 7 ? "is-long" : ""}">${text}</span>`;
 }
 
