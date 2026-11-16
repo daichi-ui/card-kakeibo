@@ -20,6 +20,7 @@ export const state = {
   fixedOverrides: [],
   categories: [],
   storeIcons: [],
+  loaded: {},   // 読み込みが終わったコレクション
   error: null
 };
 
@@ -46,6 +47,7 @@ export function initStore(user) {
   state.error = null;
   const watch = (ref, key) => onSnapshot(ref, (snap) => {
     state[key] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    state.loaded[key] = true;
     notify();
   }, (err) => {
     if (key === "storeIcons") {
@@ -82,7 +84,7 @@ export function initStore(user) {
 export function stopStore() {
   unsubscribes.forEach((fn) => fn());
   unsubscribes = [];
-  Object.assign(state, { user: null, transactions: [], fixedCosts: [], fixedOverrides: [], categories: [], storeIcons: [], error: null, categoryError: null, storeIconError: null });
+  Object.assign(state, { user: null, loaded: {}, transactions: [], fixedCosts: [], fixedOverrides: [], categories: [], storeIcons: [], error: null, categoryError: null, storeIconError: null });
   notify();
 }
 
@@ -270,13 +272,19 @@ export function storeIconMatch(store) {
   if (!store || state.storeIcons.length === 0) return null;
   if (matchCache.list !== state.storeIcons) matchCache = { list: state.storeIcons, map: new Map() };
   if (matchCache.map.has(store)) return matchCache.map.get(store);
+  const hit = bestIcon(state.storeIcons, store);
+  matchCache.map.set(store, hit);
+  return hit;
+}
+
+// 登録の一覧 list の中で、お店の名前に当てはまるもの（長い名前を優先。なければ null）
+export function bestIcon(list, store) {
+  if (!store) return null;
   const key = storeKey(store);
-  const hit = state.storeIcons
+  return list
     .filter((r) => r.keyword && storeKey(r.keyword) && key.includes(storeKey(r.keyword)))
     .sort((a, b) => storeKey(b.keyword).length - storeKey(a.keyword).length)
     .at(0) || null;
-  matchCache.map.set(store, hit);
-  return hit;
 }
 
 export function storeIconFor(store) {

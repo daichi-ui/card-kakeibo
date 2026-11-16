@@ -116,7 +116,6 @@ const titleEl = document.getElementById("categoryTitle");
 const nameEl = document.getElementById("categoryName");
 const swatchesEl = document.getElementById("categorySwatches");
 const delEl = document.getElementById("categoryDelete");
-const noteEl = document.getElementById("categoryNote");
 const msgEl = document.getElementById("categoryMsg");
 let editingId = null;
 let color = PALETTE.at(0);
@@ -155,9 +154,6 @@ export function openCategorySheet(id = null, name = "") {
   const used = new Set(state.categories.map((x) => x.color));
   setColor(c ? categoryColor(c.name) : name ? categoryColor(name) : PALETTE.find((p) => !used.has(p)) || PALETTE.at(0));
   delEl.hidden = !c;
-  const count = c ? usageCount(c.name) : 0;
-  noteEl.textContent = count ? `${count}件で使用中` : "";
-  noteEl.hidden = !count;
   sheet.showModal();
 }
 
@@ -186,6 +182,18 @@ function setMsg(text) {
   msgEl.classList.add("error");
 }
 
+// カテゴリを消したら、使っているところもまとめて「未分類」に戻す
+async function clearEverywhere(name) {
+  const txs = state.transactions.filter((t) => normalizeCategory(t.category) === name);
+  const fcs = state.fixedCosts.filter((f) => normalizeCategory(f.category) === name);
+  const sis = state.storeIcons.filter((r) => r.category && normalizeCategory(r.category) === name);
+  await Promise.all([
+    ...txs.map((t) => updateDoc(doc(txRef(), t.id), { category: "未分類" })),
+    ...fcs.map((f) => updateDoc(doc(fixedRef(), f.id), { category: "未分類" })),
+    ...sis.map((r) => updateDoc(doc(storeIconRef(), r.id), { category: "" }))
+  ]);
+}
+
 async function renameEverywhere(from, to) {
   const txs = state.transactions.filter((t) => normalizeCategory(t.category) === from);
   const fcs = state.fixedCosts.filter((f) => normalizeCategory(f.category) === from);
@@ -199,9 +207,10 @@ async function renameEverywhere(from, to) {
 
 delEl.addEventListener("click", async () => {
   const c = state.categories.find((x) => x.id === editingId);
-  if (!c || !confirm(`「${c.name}」を削除しますか？\n使用中の利用のカテゴリ名はそのまま残ります。`)) return;
+  if (!c || !confirm(`「${c.name}」を削除しますか？\nこのカテゴリの利用・サブスク・お店のアイコンは「未分類」になります。`)) return;
   try {
     await deleteDoc(doc(categoryRef(), c.id));
+    await clearEverywhere(c.name);
     sheet.close();
   } catch (err) {
     setMsg("削除に失敗しました：" + err.message);

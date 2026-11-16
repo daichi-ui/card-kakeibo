@@ -4,7 +4,7 @@
 import {
   doc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { state, storeIconRef, storesMatching, storeKey } from "./store.js";
+import { state, subscribe, storeIconRef, txRef, storesMatching, storeKey, bestIcon } from "./store.js";
 import { resizeImage, pickerHtml } from "./images.js";
 import { escapeHtml, normalizeCategory } from "./utils.js";
 import { attachCategoryInput, ensureCategory } from "./categories.js";
@@ -91,21 +91,72 @@ form.addEventListener("submit", async (e) => {
     return setMsg("同じ名前のアイコンがあります");
   }
   try {
+    const before = [...state.storeIcons];
+    const id = editingId || "__new";
+    const after = [...before.filter((r) => r.id !== id), { id, keyword, icon, category }];
     if (editingId) await updateDoc(doc(storeIconRef(), editingId), { keyword, icon, category });
     else await addDoc(storeIconRef(), { keyword, icon, category, createdAt: serverTimestamp() });
     if (category) ensureCategory(category);
+    const n = await syncTxCategories(before, after, id);
     sheet.close();
-    toast(`「${keyword}」のアイコンを保存しました`);
+    toast(n ? `「${keyword}」を保存し、${n}件の利用のカテゴリを変えました` : `「${keyword}」のアイコンを保存しました`);
   } catch (err) {
     setMsg("保存に失敗しました：" + err.message);
   }
 });
 
+// 読み込み・更新のたびに、カテゴリを設定したアイコンに当てはまる利用のカテゴリをそろえる
+// （前から設定してあったアイコンや、Gmail から新しく届いた利用（未分類で届く）にも付ける）
+let applying = false;
+let applyTimer = null;
+subscribe(() => {
+  clearTimeout(applyTimer);
+  applyTimer = setTimeout(applyStoreCategories, 400);
+});
+async function applyStoreCategories() {
+  if (applying || !state.user || !state.loaded.transactions || !state.loaded.storeIcons) return;
+  const jobs = [];
+  state.transactions.forEach((t) => {
+    if (t.deleted || !t.store) return;
+    const c = normalizeCategory(bestIcon(state.storeIcons, t.store)?.category);
+    if (c !== "未分類" && normalizeCategory(t.category) !== c) {
+      jobs.push(updateDoc(doc(txRef(), t.id), { category: c }));
+    }
+  });
+  if (!jobs.length) return;
+  applying = true;
+  try { await Promise.all(jobs); } catch { /* 書き込めなくても表示は store.js 側で合わせている */ }
+  applying = false;
+}
+
+// お店のアイコンのカテゴリを、当てはまる利用のデータにも書き込む
+//   設定した → 当てはまる利用をそのカテゴリにする
+//   外した・アイコンを消した → このアイコンで付いていたカテゴリを「未分類」に戻す
+// 変えた件数を返す
+async function syncTxCategories(before, after, id) {
+  const jobs = [];
+  state.transactions.forEach((t) => {
+    if (t.deleted || !t.store) return;
+    const old = bestIcon(before, t.store);
+    const now = bestIcon(after, t.store);
+    if (old?.id !== id && now?.id !== id) return; // このアイコンに関係ない利用
+    const current = normalizeCategory(t.category);
+    let next = current;
+    if (now?.category) next = normalizeCategory(now.category);
+    else if (old?.category && normalizeCategory(old.category) === current) next = "未分類";
+    if (next !== current) jobs.push(updateDoc(doc(txRef(), t.id), { category: next }));
+  });
+  await Promise.all(jobs);
+  return jobs.length;
+}
+
 delEl.addEventListener("click", async () => {
   const r = state.storeIcons.find((x) => x.id === editingId);
   if (!r || !confirm(`「${r.keyword}」のアイコンを削除しますか？`)) return;
   try {
+    const before = [...state.storeIcons];
     await deleteDoc(doc(storeIconRef(), r.id));
+    await syncTxCategories(before, before.filter((x) => x.id !== r.id), r.id);
     sheet.close();
   } catch (err) {
     setMsg("削除に失敗しました：" + err.message);

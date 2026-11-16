@@ -1,10 +1,10 @@
 // ===== ホーム =====
-// 要確認のお知らせ・次のお支払い・カレンダー（日付をタップで入力）・先月の利用とサブスク
+// 要確認のお知らせ・今月の利用・カレンダー（日付をタップで入力）・先月の利用とサブスク
 import { state, subscribe, monthTotal, monthFixedTotal, reviewItems } from "./store.js";
 import { createCalendar } from "./calendar.js";
 import { openQuickAdd } from "./quickadd.js";
 import { animateNumber } from "./motion.js";
-import { today, addMonth, nextPayment, parseDate, signedYen, price, formatMonth, slashDate } from "./utils.js";
+import { today, addMonth, paymentDateOf, parseDate, signedYen, price, formatMonth, slashDate } from "./utils.js";
 
 const payCard = document.getElementById("payCard");
 const statGrid = document.getElementById("statGrid");
@@ -37,8 +37,8 @@ function render() {
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
     </button>` : "";
 
-  // ===== 次のお支払い =====
-  const pay = nextPayment(t);
+  // ===== 今月の利用（この月に使った額と、その支払日） =====
+  const pay = { usageMonth: thisMonth, date: paymentDateOf(thisMonth) };
   const payTotal = monthTotal(pay.usageMonth);
   const daysLeft = Math.round((parseDate(pay.date) - parseDate(t)) / 86400000);
   // カードは1回だけ作り、あとは中身だけ書き換える（出てくる動きを毎回くり返さない）
@@ -46,7 +46,7 @@ function render() {
     payCard.innerHTML = `
       <button type="button" class="hero" data-tab="list">
         <span class="hero-glow" aria-hidden="true"></span>
-        <span class="hero-label">次のお支払い</span>
+        <span class="hero-label" data-label></span>
         <span class="hero-amount"><span class="price price-xl"><span class="price-num" data-count>0</span><span class="price-yen">円</span></span></span>
         <span class="hero-date"><strong data-date></strong><span class="pill" data-left></span></span>
         <span class="hero-sub" data-sub></span>
@@ -54,9 +54,10 @@ function render() {
   }
   const hero = payCard.firstElementChild;
   hero.dataset.month = pay.usageMonth;
-  hero.querySelector("[data-date]").textContent = slashDate(pay.date);
+  hero.querySelector("[data-label]").textContent = `${Number(thisMonth.slice(5, 7))}月の利用`;
+  hero.querySelector("[data-date]").textContent = `${slashDate(pay.date)} 支払い`;
   hero.querySelector("[data-left]").textContent = daysLeft === 0 ? "今日" : `あと${daysLeft}日`;
-  hero.querySelector("[data-sub]").textContent = `${formatMonth(pay.usageMonth)}利用分`;
+  hero.querySelector("[data-sub]").textContent = "";
   animateNumber(payCard.querySelector("[data-count]"), lastPay, payTotal, 900);
   lastPay = payTotal;
 
