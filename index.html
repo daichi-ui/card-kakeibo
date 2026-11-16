@@ -202,13 +202,10 @@
       </label>
 
       <div class="group">
-        <div class="combo">
-          <label class="field">
-            <span class="field-label">カテゴリ</span>
-            <input type="text" id="txCategory" maxlength="30" placeholder="未分類" autocomplete="off" role="combobox" aria-autocomplete="list">
-            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
-          </label>
-          <div class="combo-list" role="listbox"></div>
+        <div class="catpick" data-empty="未分類">
+          <span class="field-label">カテゴリ</span>
+          <input type="hidden" id="txCategory">
+          <div class="catpick-chips" role="radiogroup" aria-label="カテゴリ"></div>
         </div>
         <label class="field">
           <span class="field-label">お店</span>
@@ -304,13 +301,10 @@
           <span class="field-label">名前</span>
           <input type="text" id="subName" maxlength="50" placeholder="例：携帯料金" required>
         </label>
-        <div class="combo">
-          <label class="field">
-            <span class="field-label">カテゴリ</span>
-            <input type="text" id="subCategory" maxlength="30" placeholder="未分類" autocomplete="off" role="combobox" aria-autocomplete="list">
-            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
-          </label>
-          <div class="combo-list" role="listbox"></div>
+        <div class="catpick" data-empty="未分類">
+          <span class="field-label">カテゴリ</span>
+          <input type="hidden" id="subCategory">
+          <div class="catpick-chips" role="radiogroup" aria-label="カテゴリ"></div>
         </div>
         <label class="field">
           <span class="field-label">引き落とし日</span>
@@ -395,13 +389,10 @@
           <span class="field-label">お店の名前</span>
           <input type="text" id="storeIconKeyword" maxlength="50" placeholder="例：セブン" autocomplete="off" required>
         </label>
-        <div class="combo">
-          <label class="field">
-            <span class="field-label">カテゴリ</span>
-            <input type="text" id="storeIconCategory" maxlength="30" placeholder="設定しない" autocomplete="off" role="combobox" aria-autocomplete="list">
-            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
-          </label>
-          <div class="combo-list" role="listbox"></div>
+        <div class="catpick" data-empty="設定しない">
+          <span class="field-label">カテゴリ</span>
+          <input type="hidden" id="storeIconCategory">
+          <div class="catpick-chips" role="radiogroup" aria-label="カテゴリ"></div>
         </div>
       </div>
       <div id="storeIconMatches" class="matches"></div>
