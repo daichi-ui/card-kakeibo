@@ -1203,16 +1203,27 @@ dialog::backdrop {
 
 /* カテゴリのプルダウン：入力欄のすぐ下に開き、入力中の文字を隠さない */
 .combo { position: relative; scroll-margin-top: 72px; }
+/* 開いている間はリストをグループの外に重ねて出す（シートの高さを変えない＝画面が跳ねない） */
+.group:has(> .combo.is-open) { overflow: visible; }
+.combo.is-open { z-index: 2; }
+.group > .combo:first-child .field { border-radius: var(--r-m) var(--r-m) 0 0; }
+.group > .combo:last-child:not(.is-open) .field { border-radius: 0 0 var(--r-m) var(--r-m); }
 .combo-arrow { flex: none; width: 16px; height: 16px; margin-right: -4px; color: var(--muted); transition: transform .25s var(--spring); }
 .combo.is-open .combo-arrow { transform: rotate(180deg); color: var(--blue); }
 .combo.is-open .field { background: rgba(10, 132, 255, .04); }
 .combo-list {
   display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   max-height: 232px;
   overflow-y: auto;
   overscroll-behavior: contain;
   border-top: 1px solid var(--line);
+  border-radius: 0 0 var(--r-m) var(--r-m);
   background: var(--paper);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .16);
 }
 .combo.is-open .combo-list { display: block; animation: drop .25s var(--ease); }
 .combo-option {

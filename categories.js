@@ -17,18 +17,22 @@ export async function ensureCategory(name) {
 }
 
 // ===== プルダウン付きの入力欄 =====
-// <div class="combo"> の中の input に付ける。リストは入力欄のすぐ下に開くので入力中の文字が隠れない
+// <div class="combo"> の中の input に付ける。リストは入力欄のすぐ下に重ねて開く（シートの高さは変わらない）
+// 開いたときはすべてのカテゴリを出し（今のカテゴリに印）、文字を打ち始めたら絞り込む
 export function attachCategoryInput(input) {
   const combo = input.closest(".combo");
   const list = combo.querySelector(".combo-list");
   let active = -1;
+  let filtering = false; // 開いてから文字を打ったか
+  let closeTimer = null;
 
   const items = () => [...list.querySelectorAll(".combo-option")];
+  const isOpen = () => combo.classList.contains("is-open");
 
   function render() {
     const q = input.value;
-    const names = searchCategories(q);
-    const key = fold(q);
+    const names = searchCategories(filtering ? q : "");
+    const key = filtering ? fold(q) : "";
     active = -1;
     list.innerHTML = names.length
       ? names.map((n) => {
@@ -44,27 +48,41 @@ export function attachCategoryInput(input) {
   }
 
   function open() {
+    clearTimeout(closeTimer);
+    if (isOpen()) return;
+    filtering = false;
     render();
     combo.classList.add("is-open");
-    // 入力欄が見えるよう、シートの上の方へ寄せる
-    requestAnimationFrame(() => combo.scrollIntoView({ block: "start", behavior: "smooth" }));
+    // 今のカテゴリをリストの中で見える位置に出し、リストが隠れていればシートを少し送る
+    const sel = list.querySelector(".is-selected");
+    list.scrollTop = sel ? sel.offsetTop - list.clientHeight / 2 + sel.offsetHeight / 2 : 0;
+    requestAnimationFrame(() => list.scrollIntoView({ block: "nearest", behavior: "smooth" }));
   }
 
   function close() {
+    clearTimeout(closeTimer);
     combo.classList.remove("is-open");
   }
 
   function choose(value) {
     input.value = value;
     close();
+    // スマホではキーボードも閉じる（もう一度タップすればまた開く）
+    input.blur();
   }
 
   input.addEventListener("focus", open);
+  // すでにフォーカスがあるとき（選んだ直後など）にタップしても開く
+  input.addEventListener("click", open);
   input.addEventListener("input", () => {
-    if (!combo.classList.contains("is-open")) open();
-    else render();
+    open();
+    filtering = true;
+    render();
   });
-  input.addEventListener("blur", () => setTimeout(close, 120));
+  input.addEventListener("blur", () => {
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(close, 120);
+  });
   input.addEventListener("keydown", (e) => {
     const opts = items();
     if (e.key === "ArrowDown" || e.key === "ArrowUp") {
