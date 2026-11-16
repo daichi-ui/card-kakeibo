@@ -27,23 +27,10 @@ const f = {
   excludedRow: document.getElementById("txExcludedRow"),
   del: document.getElementById("txDelete"),
   storeIcon: document.getElementById("txStoreIcon"),
-  categoryNote: document.getElementById("txCategoryNote"),
   msg: document.getElementById("txMsg")
 };
 const closeTxCategory = attachCategoryInput(f.category);
 let editing = null; // 編集中の利用（新規なら null）
-
-// お店のアイコンにカテゴリが設定されているお店なら、そのカテゴリで集計されることを知らせる
-function renderCategoryNote() {
-  const store = f.store.value.trim();
-  const cat = storeCategoryFor(store);
-  f.categoryNote.hidden = !cat;
-  if (cat) {
-    f.categoryNote.textContent =
-      `お店のアイコン「${storeIconMatch(store).keyword}」の設定で、カテゴリは「${cat}」として表示・集計されます`;
-  }
-}
-f.store.addEventListener("input", renderCategoryNote);
 
 function setMsg(el, text) {
   el.textContent = text;
@@ -70,7 +57,6 @@ export function openTxNew(date = today(), prefill = {}) {
   f.del.hidden = true;
   f.excludedRow.hidden = true;
   f.storeIcon.hidden = true;
-  renderCategoryNote();
   setMsg(f.msg, "");
   closeTxCategory();
   txSheet.showModal();
@@ -87,23 +73,21 @@ export function openTxEdit(id) {
   f.time.value = t.time || "";
   f.store.value = t.store || "";
   f.amount.value = t.amount ?? "";
-  f.category.value = t.category && t.category !== "未分類" ? t.category : "";
+  // お店のアイコンでカテゴリが決まるお店は、そのカテゴリを出す
+  const cat = storeCategoryFor(t.store) || normalizeCategory(t.category);
+  f.category.value = cat !== "未分類" ? cat : "";
   f.memo.value = t.memo || "";
   f.excluded.checked = !!t.excluded;
   f.excludedRow.hidden = false;
   f.storeIcon.hidden = !t.store || t.needsReview;
-  renderCategoryNote();
   setMsg(f.msg, "");
   f.del.hidden = false;
 
-  if (t.source === "mail") {
-    f.note.hidden = false;
-    f.note.innerHTML = t.needsReview
-      ? `<strong>要確認</strong>${t.excerpt ? `<span class="sheet-quote">${escapeHtml(t.excerpt)}</span>` : ""}`
-      : "Gmail から取り込み";
-  } else {
-    f.note.hidden = true;
-  }
+  // 要確認のときだけ、金額を入れるためにメール本文の抜粋を見せる
+  f.note.hidden = !t.needsReview;
+  f.note.innerHTML = t.needsReview
+    ? `<strong>要確認</strong>${t.excerpt ? `<span class="sheet-quote">${escapeHtml(t.excerpt)}</span>` : ""}`
+    : "";
   closeTxCategory();
   txSheet.showModal();
 }
