@@ -226,6 +226,7 @@
           <input type="text" id="txMemo" maxlength="100" placeholder="任意">
         </label>
       </div>
+      <p id="txCategoryNote" class="group-note" hidden></p>
 
       <div id="txExcludedRow" class="group group-gap" hidden>
         <label class="field field-switch">
@@ -395,8 +396,16 @@
           <span class="field-label">お店の名前</span>
           <input type="text" id="storeIconKeyword" maxlength="50" placeholder="例：セブン" autocomplete="off" required>
         </label>
+        <div class="combo">
+          <label class="field">
+            <span class="field-label">カテゴリ</span>
+            <input type="text" id="storeIconCategory" maxlength="30" placeholder="設定しない" autocomplete="off" role="combobox" aria-autocomplete="list">
+            <svg class="combo-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5"/></svg>
+          </label>
+          <div class="combo-list" role="listbox"></div>
+        </div>
       </div>
-      <p class="group-note">名前の一部で大丈夫です。全角と半角、記号の違いは気にしなくて大丈夫です。</p>
+      <p class="group-note">名前の一部で大丈夫です。全角と半角、記号の違いは気にしなくて大丈夫です。カテゴリを設定すると、当てはまる利用はすべてこのカテゴリで表示・集計されます。</p>
       <div id="storeIconMatches" class="matches"></div>
 
       <div class="group group-gap">

@@ -6,7 +6,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { state, storeIconRef, storesMatching, storeKey } from "./store.js";
 import { resizeImage, pickerHtml } from "./images.js";
-import { escapeHtml } from "./utils.js";
+import { escapeHtml, normalizeCategory } from "./utils.js";
+import { attachCategoryInput, ensureCategory } from "./categories.js";
 import { toast } from "./toast.js";
 
 const sheet = document.getElementById("storeIconSheet");
@@ -15,11 +16,13 @@ const titleEl = document.getElementById("storeIconTitle");
 const pickBtn = document.getElementById("storeIconBtn");
 const fileEl = document.getElementById("storeIconFile");
 const keywordEl = document.getElementById("storeIconKeyword");
+const categoryEl = document.getElementById("storeIconCategory");
 const matchEl = document.getElementById("storeIconMatches");
 const delEl = document.getElementById("storeIconDelete");
 const msgEl = document.getElementById("storeIconMsg");
 
 const PREVIEW = 6; // 当てはまるお店を何件まで見せるか
+const closeCategory = attachCategoryInput(categoryEl);
 let editingId = null;
 let icon = "";
 
@@ -30,10 +33,12 @@ export function openStoreIconSheet(id = null, keyword = "") {
   editingId = r ? r.id : null;
   titleEl.textContent = r ? "お店のアイコンを編集" : "お店のアイコンを追加";
   keywordEl.value = r ? r.keyword : keyword;
+  categoryEl.value = r?.category && normalizeCategory(r.category) !== "未分類" ? r.category : "";
   icon = r ? r.icon : "";
   delEl.hidden = !r;
   renderIcon();
   renderMatches();
+  closeCategory();
   sheet.showModal();
 }
 
@@ -77,14 +82,18 @@ fileEl.addEventListener("change", async () => {
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const keyword = keywordEl.value.trim();
+  // 空なら設定しない（""）。「未分類」と入れたときも設定しない扱い
+  const cat = normalizeCategory(categoryEl.value);
+  const category = cat === "未分類" ? "" : cat;
   if (!icon) return setMsg("画像を選んでください");
   if (!storeKey(keyword)) return setMsg("お店の名前を入力してください");
   if (state.storeIcons.some((r) => r.id !== editingId && storeKey(r.keyword) === storeKey(keyword))) {
     return setMsg("同じ名前のアイコンがあります");
   }
   try {
-    if (editingId) await updateDoc(doc(storeIconRef(), editingId), { keyword, icon });
-    else await addDoc(storeIconRef(), { keyword, icon, createdAt: serverTimestamp() });
+    if (editingId) await updateDoc(doc(storeIconRef(), editingId), { keyword, icon, category });
+    else await addDoc(storeIconRef(), { keyword, icon, category, createdAt: serverTimestamp() });
+    if (category) ensureCategory(category);
     sheet.close();
     toast(`「${keyword}」のアイコンを保存しました`);
   } catch (err) {

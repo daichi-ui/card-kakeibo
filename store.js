@@ -4,7 +4,7 @@
 //   fixedCosts     … サブスク（固定費）のひな形
 //   fixedOverrides … サブスクの「この月だけ」の変更（計算から除外・金額変更）
 //   categories     … カテゴリの一覧（カテゴリ設定で登録）
-//   storeIcons     … お店のアイコン（お店の名前の一部と画像）
+//   storeIcons     … お店のアイコン（お店の名前の一部と画像、カテゴリ）
 // どの画面も monthItems() を通してデータを見るので、
 // Gmail・手入力・サブスクの合計はすべての画面で同じになる
 import { db } from "./firebase.js";
@@ -105,7 +105,7 @@ export function isActiveIn(f, month) {
 export function monthItems(month) {
   const txs = state.transactions
     .filter((t) => !t.deleted && t.date?.startsWith(month))
-    .map((t) => ({ type: "tx", ...t, excluded: !!t.excluded }));
+    .map((t) => txItem(t));
 
   const fixed = state.fixedCosts
     .filter((f) => isActiveIn(f, month))
@@ -133,6 +133,21 @@ export function monthItems(month) {
 
   return [...txs, ...fixed].sort((a, b) =>
     b.date.localeCompare(a.date) || (b.time || "").localeCompare(a.time || ""));
+}
+
+// カードの利用1件を一覧の行にする
+// お店のアイコンにカテゴリが設定されていれば、利用のカテゴリよりそちらを優先する
+//   category    … 表示・集計に使うカテゴリ
+//   ownCategory … 利用そのものに保存されているカテゴリ
+export function txItem(t) {
+  const storeCat = storeCategoryFor(t.store);
+  return {
+    type: "tx",
+    ...t,
+    ownCategory: t.category,
+    category: storeCat || t.category,
+    excluded: !!t.excluded
+  };
 }
 
 // 年単位の一覧（"2026" → 1〜12月）
@@ -197,6 +212,7 @@ export function unregisteredCategories() {
   const used = new Set();
   state.transactions.forEach((t) => !t.deleted && t.category && used.add(normalizeCategory(t.category)));
   state.fixedCosts.forEach((f) => f.category && used.add(normalizeCategory(f.category)));
+  state.storeIcons.forEach((r) => r.category && used.add(normalizeCategory(r.category)));
   used.delete("未分類");
   return [...used].filter((c) => !registered.has(c)).sort((a, b) => a.localeCompare(b, "ja"));
 }
@@ -247,20 +263,30 @@ export function storeKey(str) {
   return fold(str).replace(/[‐－―ー−\-・･.,'’&＆*＊()（）]/g, "");
 }
 
-let iconCache = { list: null, map: new Map() };
+let matchCache = { list: null, map: new Map() };
 
-export function storeIconFor(store) {
-  if (!store || state.storeIcons.length === 0) return "";
-  if (iconCache.list !== state.storeIcons) iconCache = { list: state.storeIcons, map: new Map() };
-  if (iconCache.map.has(store)) return iconCache.map.get(store);
+// お店の名前に当てはまる、お店のアイコンの登録（なければ null）
+export function storeIconMatch(store) {
+  if (!store || state.storeIcons.length === 0) return null;
+  if (matchCache.list !== state.storeIcons) matchCache = { list: state.storeIcons, map: new Map() };
+  if (matchCache.map.has(store)) return matchCache.map.get(store);
   const key = storeKey(store);
   const hit = state.storeIcons
-    .filter((r) => r.keyword && r.icon && key.includes(storeKey(r.keyword)))
+    .filter((r) => r.keyword && storeKey(r.keyword) && key.includes(storeKey(r.keyword)))
     .sort((a, b) => storeKey(b.keyword).length - storeKey(a.keyword).length)
-    .at(0);
-  const icon = hit ? hit.icon : "";
-  iconCache.map.set(store, icon);
-  return icon;
+    .at(0) || null;
+  matchCache.map.set(store, hit);
+  return hit;
+}
+
+export function storeIconFor(store) {
+  return storeIconMatch(store)?.icon || "";
+}
+
+// お店のアイコンに設定したカテゴリ（設定していなければ ""）
+export function storeCategoryFor(store) {
+  const c = normalizeCategory(storeIconMatch(store)?.category);
+  return c === "未分類" ? "" : c;
 }
 
 // 登録した名前に当てはまるお店の名前（重複なし）

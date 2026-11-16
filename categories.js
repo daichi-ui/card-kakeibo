@@ -5,7 +5,7 @@ import {
   doc, addDoc, updateDoc, deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  state, subscribe, categoryRef, txRef, fixedRef, categoryNames, searchCategories, fold, categoryColor, PALETTE
+  state, subscribe, categoryRef, txRef, fixedRef, storeIconRef, categoryNames, searchCategories, fold, categoryColor, PALETTE
 } from "./store.js";
 import { escapeHtml, normalizeCategory } from "./utils.js";
 
@@ -121,6 +121,7 @@ function setColor(c) {
 // カテゴリごとの使用件数
 export function usageCount(name) {
   return state.transactions.filter((t) => !t.deleted && normalizeCategory(t.category) === name).length +
+    state.storeIcons.filter((r) => r.category && normalizeCategory(r.category) === name).length +
     state.fixedCosts.filter((f) => normalizeCategory(f.category) === name).length;
 }
 
@@ -170,9 +171,11 @@ function setMsg(text) {
 async function renameEverywhere(from, to) {
   const txs = state.transactions.filter((t) => normalizeCategory(t.category) === from);
   const fcs = state.fixedCosts.filter((f) => normalizeCategory(f.category) === from);
+  const sis = state.storeIcons.filter((r) => r.category && normalizeCategory(r.category) === from);
   await Promise.all([
     ...txs.map((t) => updateDoc(doc(txRef(), t.id), { category: to })),
-    ...fcs.map((f) => updateDoc(doc(fixedRef(), f.id), { category: to }))
+    ...fcs.map((f) => updateDoc(doc(fixedRef(), f.id), { category: to })),
+    ...sis.map((r) => updateDoc(doc(storeIconRef(), r.id), { category: to }))
   ]);
 }
 
