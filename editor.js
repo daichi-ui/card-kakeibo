@@ -5,7 +5,7 @@ import {
   doc, addDoc, updateDoc, deleteDoc, setDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import {
-  state, txRef, overrideRef, overrideId, storeKey
+  state, txRef, overrideRef, overrideId, storeIconMatch, storeCategoryFor
 } from "./store.js";
 import { attachCategoryInput, ensureCategory } from "./categories.js";
 import { openStoreIconSheet } from "./storeicons.js";
@@ -27,10 +27,23 @@ const f = {
   excludedRow: document.getElementById("txExcludedRow"),
   del: document.getElementById("txDelete"),
   storeIcon: document.getElementById("txStoreIcon"),
+  categoryNote: document.getElementById("txCategoryNote"),
   msg: document.getElementById("txMsg")
 };
 const closeTxCategory = attachCategoryInput(f.category);
 let editing = null; // 編集中の利用（新規なら null）
+
+// お店のアイコンにカテゴリが設定されているお店なら、そのカテゴリで集計されることを知らせる
+function renderCategoryNote() {
+  const store = f.store.value.trim();
+  const cat = storeCategoryFor(store);
+  f.categoryNote.hidden = !cat;
+  if (cat) {
+    f.categoryNote.textContent =
+      `お店のアイコン「${storeIconMatch(store).keyword}」の設定で、カテゴリは「${cat}」として表示・集計されます`;
+  }
+}
+f.store.addEventListener("input", renderCategoryNote);
 
 function setMsg(el, text) {
   el.textContent = text;
@@ -57,6 +70,7 @@ export function openTxNew(date = today(), prefill = {}) {
   f.del.hidden = true;
   f.excludedRow.hidden = true;
   f.storeIcon.hidden = true;
+  renderCategoryNote();
   setMsg(f.msg, "");
   closeTxCategory();
   txSheet.showModal();
@@ -78,6 +92,7 @@ export function openTxEdit(id) {
   f.excluded.checked = !!t.excluded;
   f.excludedRow.hidden = false;
   f.storeIcon.hidden = !t.store || t.needsReview;
+  renderCategoryNote();
   setMsg(f.msg, "");
   f.del.hidden = false;
 
@@ -127,11 +142,7 @@ txForm.addEventListener("submit", async (e) => {
 f.storeIcon.addEventListener("click", () => {
   if (!editing) return;
   const store = editing.store || "";
-  const key = storeKey(store);
-  const hit = state.storeIcons
-    .filter((r) => key.includes(storeKey(r.keyword)))
-    .sort((a, b) => storeKey(b.keyword).length - storeKey(a.keyword).length)
-    .at(0);
+  const hit = storeIconMatch(store);
   txSheet.close();
   openStoreIconSheet(hit ? hit.id : null, hit ? "" : store);
 });

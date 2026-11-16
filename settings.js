@@ -126,7 +126,7 @@ function renderStoreIcons() {
         <button type="button" class="icon-tile" data-store-icon="${escapeHtml(r.id)}">
           <img src="${escapeHtml(r.icon)}" alt="">
           <span class="icon-tile-name">${escapeHtml(r.keyword)}</span>
-          <span class="icon-tile-count">${storesMatching(r.keyword).length}件</span>
+          <span class="icon-tile-count">${escapeHtml([`${storesMatching(r.keyword).length}件`, r.category].filter(Boolean).join(" ・ "))}</span>
         </button>`).join("")
     : `<p class="empty">${all.length ? "見つかりませんでした" : "右上の「追加」から登録できます"}</p>`;
 }

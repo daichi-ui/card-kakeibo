@@ -3,7 +3,7 @@
 //   タップで編集、左にスワイプで「除外」ボタン
 import { price, formatDayWeek, escapeHtml, normalizeCategory } from "./utils.js";
 import { openItem, toggleExcluded } from "./editor.js";
-import { state, monthItems, categoryColor, storeIconFor } from "./store.js";
+import { state, monthItems, categoryColor, storeIconFor, txItem } from "./store.js";
 
 // 画像の選び方：サブスクに設定した画像 → お店のアイコン（名前で判定）→ カテゴリの頭文字
 export function itemIcon(category, icon, store = "", size = "m") {
@@ -60,7 +60,7 @@ function findItem(row) {
     return monthItems(row.dataset.month).find((i) => i.type === "fixed" && i.id === row.dataset.id);
   }
   const t = state.transactions.find((x) => x.id === row.dataset.id);
-  return t ? { type: "tx", ...t, excluded: !!t.excluded } : null;
+  return t ? txItem(t) : null;
 }
 
 // ===== スワイプ =====
