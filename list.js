@@ -1,7 +1,7 @@
 // ===== 明細 =====
 //   上：カレンダー（日付をタップでクイック入力）
 //   下：月の合計と支払日、日付ごとの利用一覧（検索・絞り込み・スワイプで除外）
-import { state, subscribe, monthItems, sum, reviewItems } from "./store.js";
+import { state, subscribe, monthItems, sum, countable, reviewItems } from "./store.js";
 import { rowHtml, bindRows } from "./rows.js";
 import { createCalendar } from "./calendar.js";
 import { openQuickAdd } from "./quickadd.js";
@@ -115,7 +115,7 @@ function render(animate = false) {
     .sort((a, b) => b.localeCompare(a))
     .map((date, n) => `
       <section class="day-group ${animate ? "stagger" : ""}" style="--n:${Math.min(n, 8)}">
-        <h3 class="day-title"><span>${formatDayWeek(date)}</span><span>${yen(sum(byDate[date]))}</span></h3>
+        <h3 class="day-title"><span>${formatDayWeek(date)}</span><span>${countable(byDate[date]).length ? yen(sum(byDate[date])) : "未入力"}</span></h3>
         <div class="list">${byDate[date].map((r) => rowHtml(r)).join("")}</div>
       </section>`)
     .join("");

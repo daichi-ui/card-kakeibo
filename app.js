@@ -1,5 +1,5 @@
 import { auth } from "./firebase.js";
-import { initStore, stopStore, subscribe, state } from "./store.js";
+import { initStore, stopStore, subscribe, notify, state } from "./store.js";
 import "./home.js";
 import { addDate } from "./list.js";
 import "./report.js";
@@ -70,9 +70,15 @@ function closeSheet(dialog) {
   dialog.classList.add("is-closing");
   setTimeout(() => { dialog.close(); dialog.classList.remove("is-closing"); }, 220);
 }
+// 背景（シートの外）を押したか。シートの余白を押したときも target は dialog になるので、位置で判定する
+function isBackdropClick(dialog, e) {
+  if (e.target !== dialog) return false;
+  const r = dialog.getBoundingClientRect();
+  return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+}
 document.querySelectorAll("dialog").forEach((dialog) => {
   dialog.addEventListener("click", (e) => {
-    if (e.target === dialog || e.target.closest("[data-close]")) closeSheet(dialog);
+    if (isBackdropClick(dialog, e) || e.target.closest("[data-close]")) closeSheet(dialog);
   });
   dialog.addEventListener("cancel", (e) => { e.preventDefault(); closeSheet(dialog); });
   draggableSheet(dialog);
@@ -107,6 +113,7 @@ export function showTab(name) {
   barTitle.textContent = title;
   // ＋ボタンはホームと明細だけ
   fab.hidden = !(name === "home" || name === "list");
+  fab.classList.remove("is-away");
   history.replaceState(null, "", `#${name}`);
   window.scrollTo(0, 0);
 }
@@ -123,8 +130,32 @@ fab.addEventListener("click", () => openQuickAdd(current === "list" ? addDate() 
 
 // ===== ヘッダー =====
 // 大きな画面名の上に今日の日付。スクロールすると上のバーに小さな画面名が出る
-document.getElementById("todayLabel").textContent =
-  new Date().toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" });
-const onScroll = () => header.classList.toggle("is-scrolled", window.scrollY > 44);
+let shownDay = "";
+function updateToday() {
+  const d = new Date();
+  const key = d.toDateString();
+  if (key === shownDay) return;
+  const first = !shownDay;
+  shownDay = key;
+  document.getElementById("todayLabel").textContent =
+    d.toLocaleDateString("ja-JP", { month: "long", day: "numeric", weekday: "long" });
+  // ホーム画面に追加して開いたままにしていると日付が変わっても描き直されないので、
+  // 戻ってきたときに日付が変わっていれば、次のお支払い・カレンダーの「今日」などを描き直す
+  if (!first && state.user) notify();
+}
+updateToday();
+document.addEventListener("visibilitychange", () => { if (!document.hidden) updateToday(); });
+setInterval(updateToday, 60 * 1000);
+
+// 下へスクロールしている間は＋ボタンを隠し、一覧の金額を隠さないようにする（上へ戻すとまた出る）
+let lastY = window.scrollY;
+const onScroll = () => {
+  const y = window.scrollY;
+  header.classList.toggle("is-scrolled", y > 44);
+  if (Math.abs(y - lastY) > 6) {
+    fab.classList.toggle("is-away", y > lastY && y > 80);
+    lastY = y;
+  }
+};
 window.addEventListener("scroll", onScroll, { passive: true });
 onScroll();

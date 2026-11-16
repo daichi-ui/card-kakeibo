@@ -49,6 +49,12 @@ barEl.addEventListener("click", (e) => {
   render();
 });
 
+// 年の月平均で割る月数：今年は今月まで、ほかの年は12か月
+function monthsSoFar(y) {
+  const t = today();
+  return y === t.slice(0, 4) ? Number(t.slice(5, 7)) : 12;
+}
+
 // 軸のきりのいい最大値（例：37,000 → 40,000）
 function niceMax(v) {
   if (v <= 0) return 10000;
@@ -86,7 +92,7 @@ function render() {
     <span class="summary-amount">${price(total, "xl")}</span>
     <span class="summary-meta">
       <span class="${diff > 0 ? "is-up" : diff < 0 ? "is-down" : ""}">${mode === "month" ? "前月" : "前年"}比 ${signedYen(diff)}</span>
-      ${mode === "year" ? `<span>月平均 ${yen(total / 12)}</span>` : ""}
+      ${mode === "year" ? `<span>月平均 ${yen(total / monthsSoFar(year))}</span>` : ""}
     </span>`;
 
   renderPie(categoryTotals(items), total);

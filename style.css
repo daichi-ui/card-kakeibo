@@ -42,12 +42,59 @@
   --spring: cubic-bezier(.22, 1.2, .36, 1);
   --ease: cubic-bezier(.2, .8, .2, 1);
 
+  --on-ink: #FFFFFF;      /* 濃い面（--ink）の上の文字 */
+  --press: #F7F7FA;       /* 押している間の面 */
+  --sheet: var(--paper);  /* 下から出るシートの背景 */
+  --glass: rgba(255, 255, 255, .78);        /* 下部タブ */
+  --glass-paper: rgba(242, 242, 247, .78);  /* スクロールしたときのヘッダー */
+  --glass-sheet: rgba(242, 242, 247, .92);  /* シートの見出し */
+  --orange-ink: #9A4A00;  /* 要確認の文字 */
+  --bar-soft: #C9DCF5;    /* 棒グラフ（選んでいない月） */
+
   --tabbar-h: 64px;
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
   --font-num: ui-rounded, "SF Pro Rounded", -apple-system, "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif;
 
   color-scheme: light;
+}
+
+/* ===== ダークモード（端末の設定に合わせる） ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #000000;
+    --surface: #1C1C1E;
+    --ink: #F5F5F7;
+    --muted: #8E8E93;
+    --faint: #48484A;
+    --off: #2C2C2E;
+    --line: rgba(84, 84, 88, .55);
+
+    --blue: #0A84FF;
+    --blue-ink: #409CFF;
+    --blue-soft: rgba(10, 132, 255, .24);
+    --green: #30D158;
+    --red: #FF453A;
+    --red-soft: rgba(255, 69, 58, .18);
+    --orange: #FF9F0A;
+    --orange-soft: rgba(255, 159, 10, .18);
+
+    --lift: 0 0 0 1px rgba(255, 255, 255, .04);
+    --lift-strong: 0 2px 6px rgba(0, 0, 0, .4), 0 24px 48px -12px rgba(0, 0, 0, .7);
+
+    --on-ink: #000000;
+    --press: #2C2C2E;
+    --sheet: #1C1C1E;
+    --glass: rgba(44, 44, 46, .78);
+    --glass-paper: rgba(0, 0, 0, .72);
+    --glass-sheet: rgba(28, 28, 30, .92);
+    --orange-ink: #FFB340;
+    --bar-soft: #1F3A60;
+
+    color-scheme: dark;
+  }
+  /* シートの中の入力欄は、シートより一段明るい面にする */
+  .sheet { --surface: #2C2C2E; --press: #3A3A3C; --off: #3A3A3C; }
 }
 
 /* ===== 基本 ===== */
@@ -135,7 +182,7 @@ svg {
 }
 .btn:active { transform: scale(.97); }
 .btn:disabled { opacity: .35; }
-.btn-primary { background: var(--ink); color: #fff; }
+.btn-primary { background: var(--ink); color: var(--on-ink); }
 .btn-block { display: block; width: 100%; }
 .btn-large { min-width: 280px; }
 
@@ -162,7 +209,7 @@ svg {
 }
 .icon-button svg { width: 19px; height: 19px; stroke-width: 2.2; }
 .icon-button:active { transform: scale(.9); }
-.icon-button.is-active { background: var(--ink); color: #fff; }
+.icon-button.is-active { background: var(--ink); color: var(--on-ink); }
 
 /* ===== ログイン ===== */
 .login {
@@ -209,7 +256,7 @@ svg {
   transition: background .25s, border-color .25s;
 }
 .header.is-scrolled {
-  background: rgba(242, 242, 247, .78);
+  background: var(--glass-paper);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
   border-bottom-color: var(--line);
@@ -281,7 +328,7 @@ svg {
   padding: 13px 16px;
   border-radius: var(--r-m);
   background: var(--orange-soft);
-  color: #9A4A00;
+  color: var(--orange-ink);
   font-size: 14px;
   font-weight: 600;
   text-align: left;
@@ -464,7 +511,7 @@ svg {
 .cal-day.is-sun .cal-num { color: var(--red); }
 .cal-day.is-sat .cal-num { color: var(--blue); }
 .cal-day.is-future .cal-num { opacity: .45; }
-.cal-day.is-today .cal-num { background: var(--ink); color: #fff; opacity: 1; }
+.cal-day.is-today .cal-num { background: var(--ink); color: var(--on-ink); opacity: 1; }
 .cal-amount {
   max-width: 100%;
   min-height: 13px;
@@ -547,7 +594,7 @@ svg {
   transition: background .2s, color .2s, transform .2s var(--spring);
 }
 .chip:active { transform: scale(.94); }
-.chip.is-active { background: var(--ink); color: #fff; }
+.chip.is-active { background: var(--ink); color: var(--on-ink); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 4px 0; }
 .chips .chip { box-shadow: none; background: var(--blue-soft); color: var(--blue-ink); }
 .chips .chip-strong { background: var(--blue); color: #fff; }
@@ -607,7 +654,7 @@ svg {
   touch-action: pan-y;
   transition: transform .35s var(--spring), background .15s;
 }
-.row-main:active { background: #F7F7FA; }
+.row-main:active { background: var(--press); }
 .row-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; font-weight: 600; }
 .row-sub {
@@ -632,7 +679,7 @@ svg {
   width: 40px;
   height: 40px;
   border-radius: 13px;
-  background: color-mix(in srgb, var(--c) 15%, white);
+  background: color-mix(in srgb, var(--c) 15%, var(--surface));
   color: var(--c);
   font-size: 16px;
   font-weight: 800;
@@ -642,7 +689,7 @@ svg {
 .dot-l { width: 14px; height: 14px; margin: 0 8px 0 4px; }
 
 .badge { flex: none; padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; line-height: 18px; }
-.badge-review { background: var(--orange-soft); color: #B04F00; }
+.badge-review { background: var(--orange-soft); color: var(--orange-ink); }
 .badge-off { background: var(--off); color: var(--muted); }
 
 .empty { margin: 0; padding: 32px 16px; color: var(--muted); text-align: center; }
@@ -664,7 +711,7 @@ svg {
   padding: 10px 16px;
   text-align: left;
 }
-button.cell:active { background: #F7F7FA; }
+button.cell:active { background: var(--press); }
 .cells .cell + .cell::before,
 .cells > div:not(:empty) + .cell::before,
 #subsList .cell + .cell::before,
@@ -709,12 +756,14 @@ button.cell:active { background: #F7F7FA; }
   height: 60px;
   border-radius: 20px;
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   box-shadow: 0 10px 24px -6px rgba(17, 24, 39, .5);
   transition: transform .3s var(--spring);
 }
 .fab svg { width: 26px; height: 26px; stroke-width: 2.4; transition: transform .3s var(--spring); }
 .fab:active { transform: scale(.9); }
+.fab.is-away { transform: translateY(calc(100% + 40px)) scale(.6); opacity: 0; pointer-events: none; }
+.fab { transition: transform .3s var(--spring), opacity .2s; }
 .fab:active svg { transform: rotate(90deg); }
 
 /* ===== 下部タブ（浮いたガラスのカプセル） ===== */
@@ -729,7 +778,7 @@ button.cell:active { background: #F7F7FA; }
   height: var(--tabbar-h);
   padding: 6px;
   border-radius: 24px;
-  background: rgba(255, 255, 255, .78);
+  background: var(--glass);
   -webkit-backdrop-filter: saturate(180%) blur(24px);
   backdrop-filter: saturate(180%) blur(24px);
   box-shadow: 0 0 0 1px var(--line), 0 12px 32px -8px rgba(17, 24, 39, .25);
@@ -761,7 +810,7 @@ button.cell:active { background: #F7F7FA; }
   transition: color .3s;
 }
 .tab svg { width: 22px; height: 22px; stroke-width: 1.9; }
-.tab.active { color: #fff; }
+.tab.active { color: var(--on-ink); }
 
 /* ===== レポート ===== */
 .segmented {
@@ -816,7 +865,7 @@ button.cell:active { background: #F7F7FA; }
 .chart-bar { cursor: pointer; }
 .chart-bar rect:first-child { stroke: none; }
 .chart-bar rect:last-of-type {
-  fill: #C9DCF5;
+  fill: var(--bar-soft);
   stroke: none;
   transform-box: fill-box;
   transform-origin: bottom;
@@ -850,7 +899,7 @@ dialog::backdrop {
   margin: auto auto 0;
   padding: 0 18px calc(24px + env(safe-area-inset-bottom));
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  background: var(--paper);
+  background: var(--sheet);
   overflow-y: auto;
   box-shadow: 0 -10px 40px rgba(0, 0, 0, .12);
   transition: transform .3s var(--ease);
@@ -875,7 +924,7 @@ dialog::backdrop {
   align-items: center;
   margin: 0 -18px 12px;
   padding: 10px 18px 8px;
-  background: rgba(242, 242, 247, .92);
+  background: var(--glass-sheet);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   touch-action: none;
@@ -895,7 +944,7 @@ dialog::backdrop {
 .sheet-bar > :last-child { justify-self: end; }
 .sheet-title { margin: 0; font-size: 17px; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sheet-note { margin: 0 4px 12px; color: var(--muted); font-size: 13px; text-align: center; }
-.sheet-note strong { color: #B04F00; }
+.sheet-note strong { color: var(--orange-ink); }
 .sheet-quote {
   display: block;
   margin-top: 8px;
@@ -1088,7 +1137,7 @@ dialog::backdrop {
   font-size: 16px;
   text-align: center;
 }
-.row-button:active { background: #F7F7FA; }
+.row-button:active { background: var(--press); }
 .row-danger { color: var(--red); }
 
 /* 大きな金額入力 */
@@ -1273,7 +1322,7 @@ dialog::backdrop {
   padding: 12px 18px;
   border-radius: 999px;
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   font-size: 14px;
   font-weight: 600;
   box-shadow: 0 10px 30px rgba(0, 0, 0, .25);
